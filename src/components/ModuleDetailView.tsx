@@ -37,7 +37,7 @@ export const ModuleDetailView: React.FC<ModuleDetailViewProps> = ({
         <div className="relative z-10 space-y-3 max-w-3xl">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-indigo-800 border border-indigo-700 text-amber-300 text-xs font-bold uppercase tracking-wider">
             <Shield className="w-3.5 h-3.5" />
-            {module.code} • Programa Oficial ISPC
+            {module.code} • Programa Oficial
           </div>
 
           <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
@@ -97,10 +97,10 @@ export const ModuleDetailView: React.FC<ModuleDetailViewProps> = ({
                   </p>
                 </div>
 
-                {/* PDF info */}
+                {/* Topic info */}
                 <div className="flex items-center gap-2 text-[11px] text-slate-500 bg-slate-50 p-2 rounded-lg border border-slate-200">
                   <FileText className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-                  <span className="truncate font-medium text-slate-700">{uf.pdfNom}</span>
+                  <span className="truncate font-medium text-slate-700">Temari Oficial {uf.code}</span>
                   <span className="ml-auto font-mono text-slate-400 shrink-0">({uf.pdfPagines} pàg.)</span>
                 </div>
               </div>

@@ -37,6 +37,14 @@ export interface ExamAttempt {
   tempsSegons: number;
 }
 
+export interface TopicContent {
+  titolTema: string;
+  desenvolupamentText: string[];
+  subratllatVerd?: string[];
+  destacatsVermell: string[];
+  resumBreu: string;
+}
+
 export interface FormativeUnit {
   id: string; // e.g. "uf-1-1"
   code: string; // e.g. "UF 1.1"
@@ -48,6 +56,7 @@ export interface FormativeUnit {
   pdfDataPublicacio: string;
   pdfTextContingut: string; // Official text extracted from PDF
   indexPdf?: string[]; // Index / Table of Contents of topics in the PDF
+  temes?: TopicContent[]; // Detailed topic-by-topic content for Temari and Resum
   resumPuntsClau: string[]; // Key study points for the day before
   preguntesExamenPredefinides: Question[];
 }

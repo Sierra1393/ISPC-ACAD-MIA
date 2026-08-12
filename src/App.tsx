@@ -225,7 +225,7 @@ export default function App() {
                 </h1>
 
                 <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-                  Accedeix als <strong>7 Mòduls Oficials de l'ISPC</strong>, genera resums d'urgència per estudiar el dia d'abans i posa't a prova amb exàmens simulats <strong>basats estrictament en els PDF oficials</strong>.
+                  Accedeix als <strong>7 Mòduls Oficials del Curs</strong>, genera targetes Flash d'urgència per estudiar el dia d'abans i posa't a prova amb exàmens simulats <strong>basats en el temari oficial</strong>.
                 </p>
 
                 {/* Search input */}
@@ -294,9 +294,9 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-4 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <Shield className="w-4 h-4 text-indigo-600" />
-            <span className="font-semibold text-slate-700">Acadèmia ALPHA 13 • ISPC 2026-2027</span>
+            <span className="font-semibold text-slate-700">Acadèmia ALPHA 13 • Curs 2026-2027</span>
           </div>
-          <p>© 2026 ALPHA 13 • Institut de Seguretat Pública de Catalunya. Tots els drets reservats.</p>
+          <p>© 2026 ALPHA 13. Tots els drets reservats.</p>
         </div>
       </footer>
 

@@ -65,10 +65,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                 ALPHA 13
               </span>
               <span className="bg-indigo-50 text-indigo-700 text-[10px] font-bold px-2 py-0.5 rounded border border-indigo-200">
-                ISPC 2026-2027
+                CURS 2026-2027
               </span>
             </div>
-            <p className="text-[11px] text-slate-400 font-medium">Escola de Seguretat Pública de Catalunya</p>
+            <p className="text-[11px] text-slate-400 font-medium">Plataforma de Formació en Seguretat Pública</p>
           </div>
         </div>
 

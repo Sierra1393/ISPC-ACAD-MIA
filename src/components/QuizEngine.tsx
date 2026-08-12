@@ -34,7 +34,7 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({
         <Sparkles className="w-12 h-12 text-amber-300 mx-auto animate-pulse" />
         <h3 className="text-lg font-bold text-white">Generar Test d'Examen</h3>
         <p className="text-xs text-indigo-200 max-w-md mx-auto">
-          Genera un qüestionari d'examen basat <strong>únicament en el PDF oficial</strong> d'aquesta Unitat Formativa.
+          Genera un qüestionari d'examen basat <strong>únicament en el temari oficial</strong> d'aquesta Unitat Formativa.
         </p>
         <button
           onClick={onRegenerateAiQuiz}
@@ -44,7 +44,7 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({
           {isLoadingAi ? (
             <>
               <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              Generant preguntes des del PDF...
+              Generant preguntes des del temari...
             </>
           ) : (
             <>
@@ -117,7 +117,7 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({
             <h3 className="font-bold text-sm text-white">{ufTitle}</h3>
           </div>
           <p className="text-[11px] text-indigo-200 mt-0.5">
-            Preguntes de test basades únicament en el PDF oficial
+            Preguntes de test basades únicament en el temari oficial
           </p>
         </div>
 
@@ -230,11 +230,11 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({
               <div className="p-4 rounded-xl bg-indigo-50 border border-indigo-200 space-y-2 text-xs text-indigo-950 animate-fade-in">
                 <div className="flex items-center gap-2 text-indigo-900 font-bold">
                   <FileText className="w-4 h-4 text-indigo-600" />
-                  <span>Explicació Oficial & Cita del PDF:</span>
+                  <span>Explicació Oficial del Temari:</span>
                 </div>
                 <p className="leading-relaxed">{currentQ.explicacio}</p>
                 <div className="text-[11px] text-indigo-700 font-mono pt-1">
-                  📌 Cita: {currentQ.referenciaOficial}
+                  📌 Referència: {currentQ.referenciaOficial}
                 </div>
               </div>
             )}
@@ -294,7 +294,7 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({
               </span>
             ) : (
               <span className="inline-block px-3 py-1 rounded-full bg-rose-100 text-rose-800 border border-rose-300 text-xs font-bold">
-                ⚠️ NO APTO. Revisa els punts clau del PDF.
+                ⚠️ NO APTO. Revisa els punts clau del temari.
               </span>
             )}
           </div>

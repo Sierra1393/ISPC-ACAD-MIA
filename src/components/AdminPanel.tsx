@@ -266,7 +266,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               required
               value={newPdfTitle}
               onChange={(e) => setNewPdfTitle(e.target.value)}
-              placeholder="Ex. ISPC_Tema_Nova_Legislacio_2026.pdf"
+              placeholder="Ex. Tema_Nova_Legislacio_2026.pdf"
               className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-indigo-600 focus:bg-white"
             />
           </div>

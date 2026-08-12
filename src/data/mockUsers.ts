@@ -6,7 +6,7 @@ export const INITIAL_USERS: UserProfile[] = [
     nom: 'Sergi Planas (Administrador)',
     email: 'admin@oposicions-policia.cat',
     dni: '47123984A',
-    oposicio: "Coordinació d'Oposicions - ISPC",
+    oposicio: "Coordinació d'Oposicions",
     role: 'admin',
     estatPagament: 'aprovat',
     dataRegistre: '01/01/2026',
