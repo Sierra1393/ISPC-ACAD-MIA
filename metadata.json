@@ -1,0 +1,6 @@
+{
+  "name": "ALPHA 13 - Oposicions Policies ISPC 2026-2027",
+  "description": "Plataforma d'aprenentatge de l'Acadèmia ALPHA 13 per a oposicions de policia amb resums i tests generats per IA a partir de PDFs oficials.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
