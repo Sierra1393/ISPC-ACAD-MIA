@@ -7,6 +7,10 @@ import React, { useState } from 'react';
 import { UserProfile, Module, FormativeUnit, ExamAttempt } from './types';
 import { COURSE_MODULES } from './data/courseData';
 import { INITIAL_USERS } from './data/mockUsers';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { LoginScreen } from './components/auth/LoginScreen';
+import { RegisterScreen } from './components/auth/RegisterScreen';
+import { PaymentScreen } from './components/auth/PaymentScreen';
 import { Navbar } from './components/Navbar';
 import { RegistrationModal } from './components/RegistrationModal';
 import { AdminPanel } from './components/AdminPanel';
@@ -14,12 +18,14 @@ import { ModuleCard } from './components/ModuleCard';
 import { ModuleDetailView } from './components/ModuleDetailView';
 import { UfDetailView } from './components/UfDetailView';
 import { ProgressDashboard } from './components/ProgressDashboard';
-import { Search, Shield, BookOpen, Lock, Sparkles, CheckCircle2, Clock, AlertTriangle, ArrowRight } from 'lucide-react';
+import { Search, Shield, BookOpen, Lock, Sparkles, CheckCircle2, Clock, AlertTriangle, ArrowRight, FileText } from 'lucide-react';
 
-export default function App() {
-  const [users, setUsers] = useState<UserProfile[]>(INITIAL_USERS);
-  const [currentUser, setCurrentUser] = useState<UserProfile>(INITIAL_USERS[1]); // Default to Approved Student
-  const [activeTab, setActiveTab] = useState<string>('cursos'); // 'cursos' | 'admin' | 'progres'
+/**
+ * AppContent: Main application component (rendered after authentication)
+ */
+function AppContent() {
+  const { currentUser, users, setUsers, devSwitchUser } = useAuth();
+  const [activeTab, setActiveTab] = useState<string>(currentUser?.role === 'admin' ? 'admin' : 'cursos');
   const [selectedModuleId, setSelectedModuleId] = useState<string | null>(null);
   const [selectedUf, setSelectedUf] = useState<FormativeUnit | null>(null);
   const [modules, setModules] = useState<Module[]>(COURSE_MODULES);
@@ -37,11 +43,15 @@ export default function App() {
     }
   ]);
 
-  // Switch active user role
-  const handleSwitchUser = (userId: string) => {
+  if (!currentUser) {
+    return null;
+  }
+
+  // Development: Switch active user role for testing
+  const handleDevSwitchUser = (userId: string) => {
+    devSwitchUser(userId);
     const u = users.find(usr => usr.id === userId);
     if (u) {
-      setCurrentUser(u);
       if (u.role === 'admin') {
         setActiveTab('admin');
       } else {
@@ -57,44 +67,38 @@ export default function App() {
       ...data,
       estatPagament: 'pendent'
     };
-    setCurrentUser(updatedUser);
-    setUsers(prev => prev.map(u => u.id === currentUser.id ? updatedUser : u));
+    const updatedUsers = users.map(u => u.id === currentUser.id ? updatedUser : u);
+    setUsers(updatedUsers);
   };
 
   // Admin approves user access
   const handleApproveUser = (userId: string) => {
-    setUsers(prev => prev.map(u => {
+    const updatedUsers = users.map(u => {
       if (u.id === userId) {
         return {
           ...u,
-          estatPagament: 'aprovat',
+          estatPagament: 'aprovat' as const,
           dataPagament: new Date().toLocaleDateString('ca-ES')
         };
       }
       return u;
-    }));
-
-    if (currentUser.id === userId) {
-      setCurrentUser(prev => ({
-        ...prev,
-        estatPagament: 'aprovat',
-        dataPagament: new Date().toLocaleDateString('ca-ES')
-      }));
-    }
+    });
+    setUsers(updatedUsers);
   };
 
   // Admin rejects user access
   const handleRejectUser = (userId: string, motiu: string) => {
-    setUsers(prev => prev.map(u => {
+    const updatedUsers = users.map(u => {
       if (u.id === userId) {
         return {
           ...u,
-          estatPagament: 'rebutjat',
+          estatPagament: 'rebutjat' as const,
           motiuRebuig: motiu
         };
       }
       return u;
-    }));
+    });
+    setUsers(updatedUsers);
   };
 
   // Admin adds custom PDF to a UF
@@ -137,7 +141,7 @@ export default function App() {
       <Navbar
         currentUser={currentUser}
         users={users}
-        onSwitchUser={handleSwitchUser}
+        onSwitchUser={handleDevSwitchUser}
         onOpenRegistration={() => setIsRegistrationOpen(true)}
         activeTab={activeTab}
         setActiveTab={(tab) => {
@@ -173,45 +177,77 @@ export default function App() {
 
       {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-        {/* Render Selected UF Detail Page */}
-        {selectedUf ? (
-          <UfDetailView
-            uf={selectedUf}
-            moduleTitle={modules.find(m => m.unitatsFormatives.some(u => u.id === selectedUf.id))?.titol || 'Mòdul'}
-            onBack={() => setSelectedUf(null)}
-            onSaveAttempt={handleSaveAttempt}
-          />
-        ) : selectedModuleId && modules.find(m => m.id === selectedModuleId) ? (
-          <ModuleDetailView
-            module={modules.find(m => m.id === selectedModuleId)!}
-            onBack={() => setSelectedModuleId(null)}
-            onSelectUf={(uf) => {
-              if (currentUser.role === 'alumne' && currentUser.estatPagament !== 'aprovat') {
-                setIsRegistrationOpen(true);
-              } else {
-                setSelectedUf(uf);
-              }
-            }}
-          />
-        ) : activeTab === 'admin' ? (
-          /* Render Admin Management Panel */
-          <AdminPanel
-            users={users}
-            onApproveUser={handleApproveUser}
-            onRejectUser={handleRejectUser}
-            modules={modules}
-            onAddPdfToUf={handleAddPdfToUf}
-          />
-        ) : activeTab === 'progres' ? (
-          /* Render Student Gradebook / Progress Dashboard */
-          <ProgressDashboard
-            currentUser={currentUser}
-            attempts={attempts}
-            modules={modules}
-          />
-        ) : (
-          /* Main Courses / Modules View */
+        {/* Check if user is unapproved student trying to access courses */}
+        {currentUser.role === 'alumne' && currentUser.estatPagament !== 'aprovat' && activeTab === 'cursos' ? (
+          /* Access Restricted Screen for Unapproved Students */
           <div className="space-y-8 animate-fade-in">
+            {/* Restricted Access Banner */}
+            <div className="bg-white border-2 border-amber-200 rounded-xl p-8 shadow-sm text-center max-w-2xl mx-auto">
+              <div className="space-y-4">
+                <div className="flex justify-center">
+                  <div className="w-16 h-16 rounded-full bg-amber-50 border-2 border-amber-200 flex items-center justify-center">
+                    <Lock className="w-8 h-8 text-amber-600" />
+                  </div>
+                </div>
+                <h2 className="text-2xl font-bold text-slate-900">Accés Restringit</h2>
+                <p className="text-slate-600 text-sm max-w-md mx-auto">
+                  Per accedir al temari complet i als exàmens, primer necessites completar el procés de verificació del pagament de la quota d'oposició.
+                </p>
+                <div className="pt-4 space-y-3">
+                  <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider">Estat de la teva sol·licitud:</p>
+                  <div className="inline-flex items-center gap-3 px-4 py-2 bg-amber-50 border border-amber-200 rounded-lg">
+                    <Clock className="w-5 h-5 text-amber-600 animate-spin" />
+                    <span className="text-sm font-semibold text-amber-900">Pendent de Verificació</span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsRegistrationOpen(true)}
+                  className="mt-6 px-6 py-3 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-sm transition-colors inline-flex items-center gap-2"
+                >
+                  <FileText className="w-4 h-4" />
+                  Veure / Enviar Comprovant de Pagament
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          /* Normal Content for Approved Users */
+          <>
+            {/* Render Selected UF Detail Page */}
+            {selectedUf ? (
+              <UfDetailView
+                uf={selectedUf}
+                moduleTitle={modules.find(m => m.unitatsFormatives.some(u => u.id === selectedUf.id))?.titol || 'Mòdul'}
+                onBack={() => setSelectedUf(null)}
+                onSaveAttempt={handleSaveAttempt}
+              />
+            ) : selectedModuleId && modules.find(m => m.id === selectedModuleId) ? (
+              <ModuleDetailView
+                module={modules.find(m => m.id === selectedModuleId)!}
+                onBack={() => setSelectedModuleId(null)}
+                onSelectUf={(uf) => {
+                  setSelectedUf(uf);
+                }}
+              />
+            ) : activeTab === 'admin' ? (
+              /* Render Admin Management Panel */
+              <AdminPanel
+                users={users}
+                onApproveUser={handleApproveUser}
+                onRejectUser={handleRejectUser}
+                modules={modules}
+                onAddPdfToUf={handleAddPdfToUf}
+              />
+            ) : activeTab === 'progres' ? (
+              /* Render Student Gradebook / Progress Dashboard */
+              <ProgressDashboard
+                currentUser={currentUser}
+                attempts={attempts}
+                modules={modules}
+              />
+            ) : (
+              /* Main Courses / Modules View */
+              <div className="space-y-8 animate-fade-in">
             {/* Hero Welcome Banner */}
             <div className="bg-white border border-slate-200 rounded-xl p-6 sm:p-8 shadow-sm relative overflow-hidden flex flex-col md:flex-row items-start justify-between gap-6">
               <div className="relative z-10 space-y-3 max-w-3xl">
@@ -275,17 +311,15 @@ export default function App() {
                     module={module}
                     onSelectModule={(id) => setSelectedModuleId(id)}
                     onSelectUf={(uf) => {
-                      if (currentUser.role === 'alumne' && currentUser.estatPagament !== 'aprovat') {
-                        setIsRegistrationOpen(true);
-                      } else {
-                        setSelectedUf(uf);
-                      }
+                      setSelectedUf(uf);
                     }}
                   />
                 ))}
               </div>
             </div>
-          </div>
+              </div>
+            )}
+          </>
         )}
       </main>
 
@@ -308,5 +342,58 @@ export default function App() {
         onSubmitRegistration={handleSubmitRegistration}
       />
     </div>
+  );
+}
+
+/**
+ * Auth Screen Wrapper: Handles login/register/payment UI
+ */
+function AuthScreenWrapper() {
+  const [screen, setScreen] = useState<'login' | 'register' | 'payment'>('login');
+  const [registeredUser, setRegisteredUser] = useState<UserProfile | null>(null);
+
+  return (
+    <>
+      {screen === 'login' ? (
+        <LoginScreen onSwitchToRegister={() => setScreen('register')} />
+      ) : screen === 'payment' ? (
+        <PaymentScreen
+          user={registeredUser!}
+          onSwitchToLogin={() => setScreen('login')}
+        />
+      ) : (
+        <RegisterScreen
+          onSwitchToLogin={() => setScreen('login')}
+          onSwitchToPayment={(user) => {
+            setRegisteredUser(user);
+            setScreen('payment');
+          }}
+        />
+      )}
+    </>
+  );
+}
+
+/**
+ * App Root: Handles authentication and routing
+ */
+function AppRoot() {
+  const { isAuthenticated } = useAuth();
+
+  if (!isAuthenticated) {
+    return <AuthScreenWrapper />;
+  }
+
+  return <AppContent />;
+}
+
+/**
+ * Main App export with AuthProvider wrapper
+ */
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppRoot />
+    </AuthProvider>
   );
 }
