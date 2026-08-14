@@ -1,12 +1,18 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import React, { useState } from 'react';
-import { UserProfile, Module, FormativeUnit, ExamAttempt } from './types';
+import {
+  UserProfile,
+  Module,
+  FormativeUnit,
+  ExamAttempt
+} from './types';
+
 import { COURSE_MODULES } from './data/courseData';
-import { INITIAL_USERS } from './data/mockUsers';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+
+import { LoginScreen } from './components/auth/LoginScreen';
+import { RegisterScreen } from './components/auth/RegisterScreen';
+import { PricingCards } from './components/auth/PricingCards';
+
 import { Navbar } from './components/Navbar';
 import { RegistrationModal } from './components/RegistrationModal';
 import { AdminPanel } from './components/AdminPanel';
@@ -14,133 +20,299 @@ import { ModuleCard } from './components/ModuleCard';
 import { ModuleDetailView } from './components/ModuleDetailView';
 import { UfDetailView } from './components/UfDetailView';
 import { ProgressDashboard } from './components/ProgressDashboard';
-import { Search, Shield, BookOpen, Lock, Sparkles, CheckCircle2, Clock, AlertTriangle, ArrowRight } from 'lucide-react';
 
-export default function App() {
-  const [users, setUsers] = useState<UserProfile[]>(INITIAL_USERS);
-  const [currentUser, setCurrentUser] = useState<UserProfile>(INITIAL_USERS[1]); // Default to Approved Student
-  const [activeTab, setActiveTab] = useState<string>('cursos'); // 'cursos' | 'admin' | 'progres'
+import {
+  Search,
+  Shield,
+  BookOpen,
+  Lock,
+  Clock,
+  FileText,
+  Sparkles,
+  CheckCircle2
+} from 'lucide-react';
+
+
+// ============================================================
+// COMPONENTE PRINCIPAL DESPUÉS DEL LOGIN
+// ============================================================
+
+function AppContent() {
+  const {
+    currentUser,
+    users,
+    setUsers,
+    devSwitchUser
+  } = useAuth();
+
+  const [activeTab, setActiveTab] = useState<string>(
+    currentUser?.role === 'admin' ? 'admin' : 'cursos'
+  );
+
   const [selectedModuleId, setSelectedModuleId] = useState<string | null>(null);
-  const [selectedUf, setSelectedUf] = useState<FormativeUnit | null>(null);
-  const [modules, setModules] = useState<Module[]>(COURSE_MODULES);
-  const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [attempts, setAttempts] = useState<ExamAttempt[]>([
-    {
-      id: 'att-1',
-      ufId: 'UF 1.1',
-      data: '05/02/2026',
-      puntuacio: 8.5,
-      totalPreguntes: 4,
-      encerts: 3,
-      tempsSegons: 120
-    }
-  ]);
 
-  // Switch active user role
-  const handleSwitchUser = (userId: string) => {
-    const u = users.find(usr => usr.id === userId);
-    if (u) {
-      setCurrentUser(u);
-      if (u.role === 'admin') {
-        setActiveTab('admin');
-      } else {
-        setActiveTab('cursos');
-      }
+  const [selectedUf, setSelectedUf] =
+    useState<FormativeUnit | null>(null);
+
+  const [modules, setModules] =
+    useState<Module[]>(COURSE_MODULES);
+
+  const [isRegistrationOpen, setIsRegistrationOpen] =
+    useState(false);
+
+  const [searchQuery, setSearchQuery] =
+    useState('');
+
+  const [attempts, setAttempts] =
+    useState<ExamAttempt[]>([]);
+
+  if (!currentUser) {
+    return null;
+  }
+
+
+  // ==========================================================
+  // ESTADO DE ACCESO
+  // ==========================================================
+
+  const isPremium =
+    currentUser.role === 'admin' ||
+    currentUser.estatPagament === 'aprovat';
+
+
+  // ==========================================================
+  // CAMBIO DE USUARIO PARA DESARROLLO
+  // ==========================================================
+
+  const handleDevSwitchUser = (userId: string) => {
+    devSwitchUser(userId);
+
+    const user = users.find(
+      usr => usr.id === userId
+    );
+
+    if (user) {
+      setActiveTab(
+        user.role === 'admin'
+          ? 'admin'
+          : 'cursos'
+      );
+
+      setSelectedUf(null);
+      setSelectedModuleId(null);
     }
   };
 
-  // Submit registration / payment proof
-  const handleSubmitRegistration = (data: Partial<UserProfile>) => {
+
+  // ==========================================================
+  // REGISTRO / COMPROBANTE
+  // ==========================================================
+
+  const handleSubmitRegistration = (
+    data: Partial<UserProfile>
+  ) => {
     const updatedUser: UserProfile = {
       ...currentUser,
       ...data,
       estatPagament: 'pendent'
     };
-    setCurrentUser(updatedUser);
-    setUsers(prev => prev.map(u => u.id === currentUser.id ? updatedUser : u));
+
+    setUsers(
+      users.map(user =>
+        user.id === currentUser.id
+          ? updatedUser
+          : user
+      )
+    );
   };
 
-  // Admin approves user access
+
+  // ==========================================================
+  // ADMINISTRACIÓN DE PAGOS
+  // ==========================================================
+
   const handleApproveUser = (userId: string) => {
-    setUsers(prev => prev.map(u => {
-      if (u.id === userId) {
-        return {
-          ...u,
-          estatPagament: 'aprovat',
-          dataPagament: new Date().toLocaleDateString('ca-ES')
-        };
-      }
-      return u;
-    }));
+    setUsers(
+      users.map(user => {
+        if (user.id === userId) {
+          return {
+            ...user,
+            estatPagament: 'aprovat' as const,
+            dataPagament:
+              new Date().toLocaleDateString('ca-ES')
+          };
+        }
 
-    if (currentUser.id === userId) {
-      setCurrentUser(prev => ({
-        ...prev,
-        estatPagament: 'aprovat',
-        dataPagament: new Date().toLocaleDateString('ca-ES')
-      }));
-    }
+        return user;
+      })
+    );
   };
 
-  // Admin rejects user access
-  const handleRejectUser = (userId: string, motiu: string) => {
-    setUsers(prev => prev.map(u => {
-      if (u.id === userId) {
-        return {
-          ...u,
-          estatPagament: 'rebutjat',
-          motiuRebuig: motiu
-        };
-      }
-      return u;
-    }));
+
+  const handleRejectUser = (
+    userId: string,
+    motiu: string
+  ) => {
+    setUsers(
+      users.map(user => {
+        if (user.id === userId) {
+          return {
+            ...user,
+            estatPagament: 'rebutjat' as const,
+            motiuRebuig: motiu
+          };
+        }
+
+        return user;
+      })
+    );
   };
 
-  // Admin adds custom PDF to a UF
-  const handleAddPdfToUf = (moduleCode: string, ufCode: string, pdfNom: string, pdfText: string) => {
-    setModules(prev => prev.map(m => {
-      if (m.code === moduleCode) {
+
+  // ==========================================================
+  // AÑADIR PDF DESDE ADMIN
+  // ==========================================================
+
+  const handleAddPdfToUf = (
+    moduleCode: string,
+    ufCode: string,
+    pdfNom: string,
+    pdfText: string
+  ) => {
+    setModules(prev =>
+      prev.map(module => {
+        if (module.code !== moduleCode) {
+          return module;
+        }
+
         return {
-          ...m,
-          unitatsFormatives: m.unitatsFormatives.map(uf => {
-            if (uf.code === ufCode) {
+          ...module,
+
+          unitatsFormatives:
+            module.unitatsFormatives.map(uf => {
+              if (uf.code !== ufCode) {
+                return uf;
+              }
+
               return {
                 ...uf,
                 pdfNom,
                 pdfTextContingut: pdfText
               };
-            }
-            return uf;
-          })
+            })
         };
-      }
-      return m;
-    }));
+      })
+    );
   };
 
-  const handleSaveAttempt = (attempt: ExamAttempt) => {
-    setAttempts(prev => [attempt, ...prev]);
+
+  // ==========================================================
+  // GUARDAR INTENTO DE EXAMEN
+  // ==========================================================
+
+  const handleSaveAttempt = (
+    attempt: ExamAttempt
+  ) => {
+    setAttempts(prev => [
+      attempt,
+      ...prev
+    ]);
   };
 
-  const pendingCount = users.filter(u => u.estatPagament === 'pendent' && u.role === 'alumne').length;
 
-  const filteredModules = modules.filter(m =>
-    m.titol.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    m.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    m.unitatsFormatives.some(u => u.titol.toLowerCase().includes(searchQuery.toLowerCase()) || u.code.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  // ==========================================================
+  // CONTROL DE ACCESO A LAS UFs
+  //
+  // FREEMIUM:
+  // - Primera UF de cada módulo = gratuita
+  // - Resto de UFs = Premium
+  // ==========================================================
+
+  const handleSelectUf = (
+    module: Module,
+    uf: FormativeUnit
+  ) => {
+
+    // Administrador y usuarios Premium
+    // tienen acceso completo.
+    if (isPremium) {
+      setSelectedUf(uf);
+      return;
+    }
+
+    // Para usuarios gratuitos:
+    // únicamente la primera UF del módulo
+    // está disponible.
+    const firstUf =
+      module.unitatsFormatives[0];
+
+    if (
+      firstUf &&
+      firstUf.id === uf.id
+    ) {
+      setSelectedUf(uf);
+      return;
+    }
+
+    // Si intenta acceder a una UF Premium,
+    // mostramos el mensaje de conversión.
+    alert(
+      'Esta unidad forma parte del contenido Premium. Puedes explorar gratuitamente la primera unidad de cada módulo y después elegir tu plan.'
+    );
+  };
+
+
+  // ==========================================================
+  // CONTADOR DE PAGOS PENDIENTES
+  // ==========================================================
+
+  const pendingCount =
+    users.filter(
+      user =>
+        user.estatPagament === 'pendent' &&
+        user.role === 'alumne'
+    ).length;
+
+
+  // ==========================================================
+  // BUSCADOR
+  // ==========================================================
+
+  const filteredModules =
+    modules.filter(module =>
+      module.titol
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase()) ||
+
+      module.code
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase()) ||
+
+      module.unitatsFormatives.some(
+        uf =>
+          uf.titol
+            .toLowerCase()
+            .includes(searchQuery.toLowerCase())
+      )
+    );
+
+
+  // ==========================================================
+  // RENDER
+  // ==========================================================
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] text-slate-800 font-sans selection:bg-indigo-600 selection:text-white flex flex-col">
-      {/* Top Navbar */}
+    <div className="min-h-screen bg-[#f8fafc] text-slate-800 font-sans flex flex-col">
+
       <Navbar
         currentUser={currentUser}
         users={users}
-        onSwitchUser={handleSwitchUser}
-        onOpenRegistration={() => setIsRegistrationOpen(true)}
+        onSwitchUser={handleDevSwitchUser}
+        onOpenRegistration={() =>
+          setIsRegistrationOpen(true)
+        }
         activeTab={activeTab}
-        setActiveTab={(tab) => {
+        setActiveTab={tab => {
           setActiveTab(tab);
           setSelectedUf(null);
           setSelectedModuleId(null);
@@ -148,53 +320,180 @@ export default function App() {
         pendingCount={pendingCount}
       />
 
-      {/* Access Restriction Warning Banner for Unapproved Students */}
-      {currentUser.role === 'alumne' && currentUser.estatPagament !== 'aprovat' && (
-        <div className="bg-amber-50 border-b border-amber-200 p-3.5">
-          <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-700 shrink-0">
-                <Clock className="w-4 h-4 animate-spin" />
+
+      {/* ======================================================
+          AVISO DE ACCESO FREEMIUM
+          ====================================================== */}
+
+      {currentUser.role === 'alumne' &&
+        !isPremium && (
+
+        <div className="bg-indigo-50 border-b border-indigo-200">
+
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+
+              <div className="flex items-start gap-3">
+
+                <div className="w-8 h-8 rounded-lg bg-indigo-100 border border-indigo-200 flex items-center justify-center shrink-0">
+                  <Sparkles className="w-4 h-4 text-indigo-600" />
+                </div>
+
+                <div>
+                  <p className="text-sm font-semibold text-indigo-900">
+                    Estás en modo gratuito
+                  </p>
+
+                  <p className="text-xs text-indigo-700 mt-0.5">
+                    Explora los módulos y accede gratuitamente
+                    a la primera unidad formativa de cada uno.
+                  </p>
+                </div>
+
               </div>
-              <p className="text-xs sm:text-sm text-amber-900">
-                <strong>Accés en Procés de Verificació:</strong> Un administrador ha de confirmar el teu pagament de la quota d'oposició per habilitar el temari complet.
-              </p>
+
+              <button
+                onClick={() =>
+                  setIsRegistrationOpen(true)
+                }
+                className="shrink-0 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-colors"
+              >
+                Ver opciones Premium
+              </button>
+
             </div>
 
-            <button
-              onClick={() => setIsRegistrationOpen(true)}
-              className="px-3.5 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-xs transition-colors"
-            >
-              Veure / Enviar Comprovant
-            </button>
           </div>
+
         </div>
       )}
 
-      {/* Main Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-        {/* Render Selected UF Detail Page */}
+
+      {/* ======================================================
+          AVISO DE CUENTA APROBADA
+          ====================================================== */}
+
+      {currentUser.role === 'alumne' &&
+        isPremium && (
+
+        <div className="bg-emerald-50 border-b border-emerald-200">
+
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+
+            <div className="flex items-center gap-3">
+
+              <div className="w-8 h-8 rounded-lg bg-emerald-100 border border-emerald-200 flex items-center justify-center">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+              </div>
+
+              <div>
+                <p className="text-sm font-semibold text-emerald-900">
+                  Acceso Premium activo
+                </p>
+
+                <p className="text-xs text-emerald-700">
+                  Tienes acceso completo al contenido de la plataforma.
+                </p>
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+      )}
+
+
+      {/* ======================================================
+          CONTENIDO PRINCIPAL
+          ====================================================== */}
+
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+
+        {/* ====================================================
+            VISTA DE UF
+            ==================================================== */}
+
         {selectedUf ? (
+
           <UfDetailView
             uf={selectedUf}
-            moduleTitle={modules.find(m => m.unitatsFormatives.some(u => u.id === selectedUf.id))?.titol || 'Mòdul'}
-            onBack={() => setSelectedUf(null)}
-            onSaveAttempt={handleSaveAttempt}
+
+            moduleTitle={
+              modules.find(
+                module =>
+                  module.unitatsFormatives.some(
+                    uf =>
+                      uf.id === selectedUf.id
+                  )
+              )?.titol || 'Mòdul'
+            }
+
+            onBack={() =>
+              setSelectedUf(null)
+            }
+
+            onSaveAttempt={
+              handleSaveAttempt
+            }
           />
-        ) : selectedModuleId && modules.find(m => m.id === selectedModuleId) ? (
+
+
+        /* ====================================================
+           VISTA DE MÓDULO
+           ==================================================== */
+
+        ) : selectedModuleId &&
+          modules.find(
+            module =>
+              module.id === selectedModuleId
+          ) ? (
+
           <ModuleDetailView
-            module={modules.find(m => m.id === selectedModuleId)!}
-            onBack={() => setSelectedModuleId(null)}
-            onSelectUf={(uf) => {
-              if (currentUser.role === 'alumne' && currentUser.estatPagament !== 'aprovat') {
-                setIsRegistrationOpen(true);
-              } else {
-                setSelectedUf(uf);
+
+            module={
+              modules.find(
+                module =>
+                  module.id === selectedModuleId
+              )!
+            }
+
+            onBack={() =>
+              setSelectedModuleId(null)
+            }
+
+            onSelectUf={uf => {
+
+              const module =
+                modules.find(
+                  module =>
+                    module.unitatsFormatives.some(
+                      moduleUf =>
+                        moduleUf.id === uf.id
+                    )
+                );
+
+              if (!module) {
+                return;
               }
+
+              handleSelectUf(
+                module,
+                uf
+              );
             }}
+
           />
+
+
+        /* ====================================================
+           ADMIN
+           ==================================================== */
+
         ) : activeTab === 'admin' ? (
-          /* Render Admin Management Panel */
+
           <AdminPanel
             users={users}
             onApproveUser={handleApproveUser}
@@ -202,111 +501,561 @@ export default function App() {
             modules={modules}
             onAddPdfToUf={handleAddPdfToUf}
           />
+
+
+        /* ====================================================
+           PROGRESO
+           ==================================================== */
+
         ) : activeTab === 'progres' ? (
-          /* Render Student Gradebook / Progress Dashboard */
+
           <ProgressDashboard
             currentUser={currentUser}
             attempts={attempts}
             modules={modules}
           />
+
+
+        /* ====================================================
+           CATÁLOGO DE CURSOS
+           ==================================================== */
+
         ) : (
-          /* Main Courses / Modules View */
-          <div className="space-y-8 animate-fade-in">
-            {/* Hero Welcome Banner */}
-            <div className="bg-white border border-slate-200 rounded-xl p-6 sm:p-8 shadow-sm relative overflow-hidden flex flex-col md:flex-row items-start justify-between gap-6">
-              <div className="relative z-10 space-y-3 max-w-3xl">
+
+          <div className="space-y-8">
+
+
+            {/* ==================================================
+                HERO DEL CATÁLOGO
+                ================================================== */}
+
+            <div className="bg-white border border-slate-200 rounded-xl p-6 sm:p-8 shadow-sm">
+
+              <div className="space-y-4 max-w-4xl">
+
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-bold uppercase tracking-wider">
+
                   <Shield className="w-3.5 h-3.5" />
-                  Plataforma Moodle per a Oposicions de Seguretat Pública
+
+                  Preparación para Seguridad Pública
+
                 </div>
 
-                <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight leading-tight">
-                  Curs de Formació Bàsica per a Policies <span className="text-indigo-600">2026-2027</span>
-                </h1>
 
-                <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-                  Accedeix als <strong>7 Mòduls Oficials del Curs</strong>, genera targetes Flash d'urgència per estudiar el dia d'abans i posa't a prova amb exàmens simulats <strong>basats en el temari oficial</strong>.
-                </p>
+                <div>
 
-                {/* Search input */}
+                  <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
+
+                    Prepara tu oposición
+                    <span className="text-indigo-600">
+                      {' '}con ALPHA 13
+                    </span>
+
+                  </h1>
+
+                  <p className="text-sm sm:text-base text-slate-600 mt-2 max-w-2xl">
+
+                    Accede al contenido de preparación,
+                    practica con tests y sigue tu progreso
+                    desde una única plataforma.
+
+                  </p>
+
+                </div>
+
+
+                {/* =================================================
+                    INDICADORES FREEMIUM
+                    ================================================= */}
+
+                {!isPremium && (
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+
+                    <div className="flex items-center gap-2 p-3 rounded-lg bg-slate-50 border border-slate-200">
+
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+
+                      <span className="text-xs text-slate-700">
+                        Explora los módulos
+                      </span>
+
+                    </div>
+
+
+                    <div className="flex items-center gap-2 p-3 rounded-lg bg-slate-50 border border-slate-200">
+
+                      <BookOpen className="w-4 h-4 text-indigo-600 shrink-0" />
+
+                      <span className="text-xs text-slate-700">
+                        Primera UF gratuita
+                      </span>
+
+                    </div>
+
+
+                    <div className="flex items-center gap-2 p-3 rounded-lg bg-slate-50 border border-slate-200">
+
+                      <Lock className="w-4 h-4 text-slate-500 shrink-0" />
+
+                      <span className="text-xs text-slate-700">
+                        Más contenido con Premium
+                      </span>
+
+                    </div>
+
+                  </div>
+
+                )}
+
+
+                {/* =================================================
+                    BUSCADOR
+                    ================================================= */}
+
                 <div className="pt-2 relative max-w-xl">
+
                   <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+
                   <input
                     type="text"
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Cerca per temes, UFs (ex. UF 1.1, UF 2.1), o paraules clau..."
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-10 pr-4 py-2.5 text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-indigo-600 focus:bg-white transition-colors"
+                    onChange={e =>
+                      setSearchQuery(
+                        e.target.value
+                      )
+                    }
+                    placeholder="Buscar por módulos, temas o unidades..."
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-10 pr-4 py-2.5 text-xs sm:text-sm focus:outline-none focus:border-indigo-600 focus:bg-white"
                   />
+
                 </div>
+
               </div>
 
-              {/* Status Indicator Card */}
-              <div className="w-full md:w-64 bg-slate-50 border border-slate-200 rounded-lg p-4 space-y-2 shrink-0">
-                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Estat de la Cursada</div>
-                <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-                  Convocatòria Activa 2026-2027
-                </div>
-                <div className="text-[11px] text-slate-500">
-                  7 Mòduls • 30 Unitats Formatives amb generador de tests
-                </div>
-              </div>
             </div>
 
-            {/* Modules Grid */}
+
+            {/* ==================================================
+                MÓDULOS
+                ================================================== */}
+
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
-                    <BookOpen className="w-5 h-5 text-indigo-600" />
-                    Mòduls del Curs d'Oposició ({filteredModules.length} de 7)
-                  </h2>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Tria qualsevol Mòdul o Unitat Formativa per accedir al temari oficial i als exàmens per IA.
+
+              <div>
+
+                <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
+
+                  <BookOpen className="w-5 h-5 text-indigo-600" />
+
+                  Módulos del curso
+
+                  <span className="text-slate-400 font-normal">
+                    ({filteredModules.length})
+                  </span>
+
+                </h2>
+
+                {!isPremium && (
+
+                  <p className="text-xs text-slate-500 mt-1">
+
+                    Puedes explorar todos los módulos.
+                    La primera unidad formativa de cada módulo
+                    está disponible gratuitamente.
+
                   </p>
-                </div>
+
+                )}
+
               </div>
 
+
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
                 {filteredModules.map(module => (
+
                   <ModuleCard
                     key={module.id}
                     module={module}
-                    onSelectModule={(id) => setSelectedModuleId(id)}
-                    onSelectUf={(uf) => {
-                      if (currentUser.role === 'alumne' && currentUser.estatPagament !== 'aprovat') {
-                        setIsRegistrationOpen(true);
-                      } else {
-                        setSelectedUf(uf);
-                      }
-                    }}
+
+                    onSelectModule={id =>
+                      setSelectedModuleId(id)
+                    }
+
+                    onSelectUf={uf =>
+                      handleSelectUf(
+                        module,
+                        uf
+                      )
+                    }
                   />
+
                 ))}
+
               </div>
+
+
+              {/* =================================================
+                  SIN RESULTADOS
+                  ================================================= */}
+
+              {filteredModules.length === 0 && (
+
+                <div className="bg-white border border-slate-200 rounded-xl p-10 text-center">
+
+                  <Search className="w-8 h-8 text-slate-300 mx-auto mb-3" />
+
+                  <h3 className="font-bold text-slate-800">
+                    No se han encontrado resultados
+                  </h3>
+
+                  <p className="text-sm text-slate-500 mt-1">
+                    Prueba con otro término de búsqueda.
+                  </p>
+
+                </div>
+
+              )}
+
             </div>
+
+
+            {/* ==================================================
+                CTA PREMIUM
+                ================================================== */}
+
+            {!isPremium && (
+
+              <div className="bg-slate-900 rounded-2xl p-6 sm:p-8 text-white">
+
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+
+                  <div className="max-w-2xl">
+
+                    <div className="inline-flex items-center gap-2 text-indigo-300 text-xs font-bold uppercase tracking-wider mb-2">
+
+                      <Sparkles className="w-4 h-4" />
+
+                      ALPHA 13 Premium
+
+                    </div>
+
+                    <h2 className="text-xl sm:text-2xl font-bold">
+
+                      Accede a toda la preparación
+
+                    </h2>
+
+                    <p className="text-sm text-slate-300 mt-2">
+
+                      Desbloquea el temario completo,
+                      todos los tests, simulacros,
+                      estadísticas y el resto de funcionalidades
+                      de la plataforma.
+
+                    </p>
+
+                  </div>
+
+
+                  <button
+                    onClick={() =>
+                      setIsRegistrationOpen(true)
+                    }
+                    className="shrink-0 px-6 py-3 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm transition-colors"
+                  >
+                    Ver planes Premium
+                  </button>
+
+                </div>
+
+              </div>
+
+            )}
+
           </div>
+
         )}
+
       </main>
 
-      {/* Footer */}
+
+      {/* ======================================================
+          FOOTER
+          ====================================================== */}
+
       <footer className="bg-white border-t border-slate-200 text-slate-500 py-6 mt-12 text-center text-xs">
+
         <div className="max-w-7xl mx-auto px-4 flex flex-wrap items-center justify-between gap-4">
+
           <div className="flex items-center gap-2">
+
             <Shield className="w-4 h-4 text-indigo-600" />
-            <span className="font-semibold text-slate-700">Acadèmia ALPHA 13 • Curs 2026-2027</span>
+
+            <span className="font-semibold text-slate-700">
+              ALPHA 13 • Curs 2026-2027
+            </span>
+
           </div>
-          <p>© 2026 ALPHA 13. Tots els drets reservats.</p>
+
+          <p>
+            © 2026 ALPHA 13. Tots els drets reservats.
+          </p>
+
         </div>
+
       </footer>
 
-      {/* Registration Modal */}
+
+      {/* ======================================================
+          MODAL DE REGISTRO
+          ====================================================== */}
+
       <RegistrationModal
         isOpen={isRegistrationOpen}
-        onClose={() => setIsRegistrationOpen(false)}
+
+        onClose={() =>
+          setIsRegistrationOpen(false)
+        }
+
         currentUser={currentUser}
-        onSubmitRegistration={handleSubmitRegistration}
+
+        onSubmitRegistration={
+          handleSubmitRegistration
+        }
       />
+
     </div>
   );
+}
+
+
+// ============================================================
+// PANTALLA DE AUTENTICACIÓN
+// ============================================================
+
+function AuthScreenWrapper() {
+
+  const [screen, setScreen] =
+    useState<'login' | 'register' | 'payment'>('login');
+
+  const [registeredUser, setRegisteredUser] =
+    useState<UserProfile | null>(null);
+
+  const [selectedPlanId, setSelectedPlanId] =
+    useState<'basic' | 'pro' | null>(null);
+
+
+  const handleSelectPlan = (
+    planId: 'basic' | 'pro'
+  ) => {
+
+    setSelectedPlanId(planId);
+
+    console.log(
+      'Plan seleccionado:',
+      planId
+    );
+  };
+
+
+  const handleContinueToPayment = () => {
+
+    if (!selectedPlanId) {
+
+      alert(
+        'Por favor, selecciona un plan primero.'
+      );
+
+      return;
+    }
+
+
+    if (registeredUser) {
+
+      const updatedUser = {
+
+        ...registeredUser,
+
+        plan: selectedPlanId,
+
+        estatPagament:
+          'pendent' as const
+
+      };
+
+
+      setRegisteredUser(
+        updatedUser
+      );
+
+
+      const storedUsers =
+        JSON.parse(
+          localStorage.getItem(
+            'auth_users'
+          ) || '[]'
+        );
+
+
+      const updatedStoredUsers =
+        storedUsers.map(
+          (user: UserProfile) =>
+            user.id === updatedUser.id
+              ? updatedUser
+              : user
+        );
+
+
+      localStorage.setItem(
+        'auth_users',
+        JSON.stringify(
+          updatedStoredUsers
+        )
+      );
+
+
+      console.log(
+        'Usuario con plan guardado:',
+        updatedUser
+      );
+
+
+      alert(
+        `Has seleccionado el plan ${
+          selectedPlanId === 'basic'
+            ? 'Básico ($4.99)'
+            : 'Pro ($9.99)'
+        }. Ahora procederemos al pago.`
+      );
+
+    }
+
+  };
+
+
+  return (
+
+    <div className="min-h-screen bg-[#f8fafc]">
+
+      {screen === 'login' ? (
+
+        <LoginScreen
+          onSwitchToRegister={() =>
+            setScreen('register')
+          }
+        />
+
+      ) : screen === 'payment' ? (
+
+        <div className="max-w-7xl mx-auto px-4 py-12">
+
+          <div className="text-center mb-12">
+
+            <h1 className="text-3xl md:text-4xl font-bold text-slate-900">
+              Elige tu plan de suscripción
+            </h1>
+
+            <p className="text-slate-600 mt-2 text-sm md:text-base">
+              Selecciona el plan que mejor se adapte a tus necesidades de estudio
+            </p>
+
+          </div>
+
+
+          <PricingCards
+            selectedPlanId={selectedPlanId}
+            onSelectPlan={handleSelectPlan}
+          />
+
+
+          {selectedPlanId && (
+
+            <div className="mt-8 text-center">
+
+              <button
+                onClick={
+                  handleContinueToPayment
+                }
+                className="px-8 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg transition-colors"
+              >
+                Continuar con el pago →
+              </button>
+
+            </div>
+
+          )}
+
+        </div>
+
+      ) : (
+
+        <RegisterScreen
+
+          onSwitchToLogin={() =>
+            setScreen('login')
+          }
+
+          onSwitchToPayment={user => {
+
+            setRegisteredUser(user);
+
+            setScreen('payment');
+
+          }}
+
+        />
+
+      )}
+
+    </div>
+
+  );
+}
+
+
+// ============================================================
+// APP ROOT
+// ============================================================
+
+function AppRoot() {
+
+  const {
+    isAuthenticated
+  } = useAuth();
+
+
+  if (!isAuthenticated) {
+
+    return (
+      <AuthScreenWrapper />
+    );
+
+  }
+
+
+  return (
+    <AppContent />
+  );
+
+}
+
+
+// ============================================================
+// EXPORTACIÓN PRINCIPAL
+// ============================================================
+
+export default function App() {
+
+  return (
+
+    <AuthProvider>
+
+      <AppRoot />
+
+    </AuthProvider>
+
+  );
+
 }

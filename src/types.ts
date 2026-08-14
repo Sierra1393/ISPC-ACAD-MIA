@@ -4,17 +4,17 @@ export type PaymentStatus = 'pendent' | 'aprovat' | 'rebutjat';
 
 export interface UserProfile {
   id: string;
-  nom: string;
   email: string;
-  dni: string;
-  oposicio: string; // e.g. "Mossos d'Esquadra", "Policia Local / Guàrdia Urbana", "Bombers"
-  role: UserRole;
-  estatPagament: PaymentStatus;
-  dataRegistre: string;
+  password: string;
+  fullName: string;
+  role: 'alumne' | 'admin';
+  estatPagament: 'pendent' | 'aprovat' | 'rebutjat';
   dataPagament?: string;
+  motiuRebuig?: string;
+  plan?: 'basic' | 'pro' | null;
+  avatar?: string;
   comprovanatUrl?: string;
   comprovantNomFitxer?: string;
-  motiuRebuig?: string;
   quantitatPagada?: number;
 }
 
