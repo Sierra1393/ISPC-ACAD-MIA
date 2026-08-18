@@ -1,6 +1,3 @@
-Exit code: 0
-Wall time: 1 seconds
-Output:
 import React, { useState } from 'react';
 import { FormativeUnit, Question, ExamAttempt, TopicContent } from '../types';
 import { QuizEngine } from './QuizEngine';
