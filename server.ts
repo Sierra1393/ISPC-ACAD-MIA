@@ -1,6 +1,3 @@
-Exit code: 0
-Wall time: 1.1 seconds
-Output:
 import express from 'express';
 import path from 'path';
 import { GoogleGenAI, Type } from '@google/genai';
