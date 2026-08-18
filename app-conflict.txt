@@ -1,0 +1,1075 @@
+diff --cc src/App.tsx
+index b8879ac,04d27a7..0000000
+--- a/src/App.tsx
++++ b/src/App.tsx
+@@@ -1,18 -1,16 +1,26 @@@
+ -/**
+ - * @license
+ - * SPDX-License-Identifier: Apache-2.0
+ - */
+ -
+  import React, { useState } from 'react';
+ -import { UserProfile, Module, FormativeUnit, ExamAttempt } from './types';
+ +import {
+ +  UserProfile,
+ +  Module,
+ +  FormativeUnit,
+ +  ExamAttempt
+ +} from './types';
+ +
+  import { COURSE_MODULES } from './data/courseData';
+++<<<<<<< ours
+ +import { AuthProvider, useAuth } from './contexts/AuthContext';
+ +
+ +import { LoginScreen } from './components/auth/LoginScreen';
+ +import { RegisterScreen } from './components/auth/RegisterScreen';
+ +import { PricingCards } from './components/auth/PricingCards';
+ +
+++=======
++ import { INITIAL_USERS } from './data/mockUsers';
++ import { AuthProvider, useAuth } from './contexts/AuthContext';
++ import { LoginScreen } from './components/auth/LoginScreen';
++ import { RegisterScreen } from './components/auth/RegisterScreen';
++ import { PaymentScreen } from './components/auth/PaymentScreen';
+++>>>>>>> theirs
+  import { Navbar } from './components/Navbar';
+  import { RegistrationModal } from './components/RegistrationModal';
+  import { AdminPanel } from './components/AdminPanel';
+@@@ -20,86 -18,45 +28,126 @@@ import { ModuleCard } from './component
+  import { ModuleDetailView } from './components/ModuleDetailView';
+  import { UfDetailView } from './components/UfDetailView';
+  import { ProgressDashboard } from './components/ProgressDashboard';
+++<<<<<<< ours
+ +
+ +import {
+ +  Search,
+ +  Shield,
+ +  BookOpen,
+ +  Lock,
+ +  Clock,
+ +  FileText,
+ +  Sparkles,
+ +  CheckCircle2
+ +} from 'lucide-react';
+ +
+ +
+ +// ============================================================
+ +// COMPONENTE PRINCIPAL DESPUÉS DEL LOGIN
+ +// ============================================================
+ +
+ +function AppContent() {
+ +  const {
+ +    currentUser,
+ +    users,
+ +    setUsers,
+ +    devSwitchUser
+ +  } = useAuth();
+ +
+ +  const [activeTab, setActiveTab] = useState<string>(
+ +    currentUser?.role === 'admin' ? 'admin' : 'cursos'
+ +  );
+ +
+ +  const [selectedModuleId, setSelectedModuleId] = useState<string | null>(null);
+ +
+ +  const [selectedUf, setSelectedUf] =
+ +    useState<FormativeUnit | null>(null);
+ +
+ +  const [modules, setModules] =
+ +    useState<Module[]>(COURSE_MODULES);
+ +
+ +  const [isRegistrationOpen, setIsRegistrationOpen] =
+ +    useState(false);
+ +
+ +  const [searchQuery, setSearchQuery] =
+ +    useState('');
+ +
+ +  const [attempts, setAttempts] =
+ +    useState<ExamAttempt[]>([]);
+++=======
++ import { Search, Shield, BookOpen, Lock, Sparkles, CheckCircle2, Clock, AlertTriangle, ArrowRight, FileText } from 'lucide-react';
++ 
++ /**
++  * AppContent: Main application component (rendered after authentication)
++  */
++ function AppContent() {
++   const { currentUser, users, setUsers, devSwitchUser } = useAuth();
++   const [activeTab, setActiveTab] = useState<string>(currentUser?.role === 'admin' ? 'admin' : 'cursos');
++   const [selectedModuleId, setSelectedModuleId] = useState<string | null>(null);
++   const [selectedUf, setSelectedUf] = useState<FormativeUnit | null>(null);
++   const [modules, setModules] = useState<Module[]>(COURSE_MODULES);
++   const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
++   const [searchQuery, setSearchQuery] = useState('');
++   const [attempts, setAttempts] = useState<ExamAttempt[]>([
++     {
++       id: 'att-1',
++       ufId: 'UF 1.1',
++       data: '05/02/2026',
++       puntuacio: 8.5,
++       totalPreguntes: 4,
++       encerts: 3,
++       tempsSegons: 120
++     }
++   ]);
+++>>>>>>> theirs
+  
+    if (!currentUser) {
+      return null;
+    }
+  
+++<<<<<<< ours
+ +
+ +  // ==========================================================
+ +  // ESTADO DE ACCESO
+ +  // ==========================================================
+ +
+ +  const isPremium =
+ +    currentUser.role === 'admin' ||
+ +    currentUser.estatPagament === 'aprovat';
+ +
+ +
+ +  // ==========================================================
+ +  // CAMBIO DE USUARIO PARA DESARROLLO
+ +  // ==========================================================
+ +
+ +  const handleDevSwitchUser = (userId: string) => {
+ +    devSwitchUser(userId);
+ +
+ +    const user = users.find(
+ +      usr => usr.id === userId
+ +    );
+ +
+ +    if (user) {
+ +      setActiveTab(
+ +        user.role === 'admin'
+ +          ? 'admin'
+ +          : 'cursos'
+ +      );
+ +
+ +      setSelectedUf(null);
+ +      setSelectedModuleId(null);
+++=======
++   // Development: Switch active user role for testing
++   const handleDevSwitchUser = (userId: string) => {
++     devSwitchUser(userId);
++     const u = users.find(usr => usr.id === userId);
++     if (u) {
++       if (u.role === 'admin') {
++         setActiveTab('admin');
++       } else {
++         setActiveTab('cursos');
++       }
+++>>>>>>> theirs
+      }
+    };
+  
+@@@ -116,84 -67,48 +164,118 @@@
+        ...data,
+        estatPagament: 'pendent'
+      };
+++<<<<<<< ours
+ +
+ +    setUsers(
+ +      users.map(user =>
+ +        user.id === currentUser.id
+ +          ? updatedUser
+ +          : user
+ +      )
+ +    );
+++=======
++     const updatedUsers = users.map(u => u.id === currentUser.id ? updatedUser : u);
++     setUsers(updatedUsers);
+++>>>>>>> theirs
+    };
+  
+ -  // Admin approves user access
+ +
+ +  // ==========================================================
+ +  // ADMINISTRACIÓN DE PAGOS
+ +  // ==========================================================
+ +
+    const handleApproveUser = (userId: string) => {
+++<<<<<<< ours
+ +    setUsers(
+ +      users.map(user => {
+ +        if (user.id === userId) {
+ +          return {
+ +            ...user,
+ +            estatPagament: 'aprovat' as const,
+ +            dataPagament:
+ +              new Date().toLocaleDateString('ca-ES')
+ +          };
+ +        }
+ +
+ +        return user;
+ +      })
+ +    );
+ +  };
+ +
+ +
+ +  const handleRejectUser = (
+ +    userId: string,
+ +    motiu: string
+ +  ) => {
+ +    setUsers(
+ +      users.map(user => {
+ +        if (user.id === userId) {
+ +          return {
+ +            ...user,
+ +            estatPagament: 'rebutjat' as const,
+ +            motiuRebuig: motiu
+ +          };
+ +        }
+ +
+ +        return user;
+ +      })
+ +    );
+++=======
++     const updatedUsers = users.map(u => {
++       if (u.id === userId) {
++         return {
++           ...u,
++           estatPagament: 'aprovat' as const,
++           dataPagament: new Date().toLocaleDateString('ca-ES')
++         };
++       }
++       return u;
++     });
++     setUsers(updatedUsers);
++   };
++ 
++   // Admin rejects user access
++   const handleRejectUser = (userId: string, motiu: string) => {
++     const updatedUsers = users.map(u => {
++       if (u.id === userId) {
++         return {
++           ...u,
++           estatPagament: 'rebutjat' as const,
++           motiuRebuig: motiu
++         };
++       }
++       return u;
++     });
++     setUsers(updatedUsers);
+++>>>>>>> theirs
+    };
+  
+ -  // Admin adds custom PDF to a UF
+ -  const handleAddPdfToUf = (moduleCode: string, ufCode: string, pdfNom: string, pdfText: string) => {
+ -    setModules(prev => prev.map(m => {
+ -      if (m.code === moduleCode) {
+ +
+ +  // ==========================================================
+ +  // AÑADIR PDF DESDE ADMIN
+ +  // ==========================================================
+ +
+ +  const handleAddPdfToUf = (
+ +    moduleCode: string,
+ +    ufCode: string,
+ +    pdfNom: string,
+ +    pdfText: string
+ +  ) => {
+ +    setModules(prev =>
+ +      prev.map(module => {
+ +        if (module.code !== moduleCode) {
+ +          return module;
+ +        }
+ +
+          return {
+ -          ...m,
+ -          unitatsFormatives: m.unitatsFormatives.map(uf => {
+ -            if (uf.code === ufCode) {
+ +          ...module,
+ +
+ +          unitatsFormatives:
+ +            module.unitatsFormatives.map(uf => {
+ +              if (uf.code !== ufCode) {
+ +                return uf;
+ +              }
+ +
+                return {
+                  ...uf,
+                  pdfNom,
+@@@ -308,11 -142,9 +390,15 @@@
+          currentUser={currentUser}
+          users={users}
+          onSwitchUser={handleDevSwitchUser}
+++<<<<<<< ours
+ +        onOpenRegistration={() =>
+ +          setIsRegistrationOpen(true)
+ +        }
+++=======
++         onOpenRegistration={() => setIsRegistrationOpen(true)}
+++>>>>>>> theirs
+          activeTab={activeTab}
+ -        setActiveTab={(tab) => {
+ +        setActiveTab={tab => {
+            setActiveTab(tab);
+            setSelectedUf(null);
+            setSelectedModuleId(null);
+@@@ -404,219 -175,98 +490,298 @@@
+          </div>
+        )}
+  
+++<<<<<<< ours
+ +
+ +      {/* ======================================================
+ +          CONTENIDO PRINCIPAL
+ +          ====================================================== */}
+ +
+ +      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+ +
+ +
+ +        {/* ====================================================
+ +            VISTA DE UF
+ +            ==================================================== */}
+ +
+ +        {selectedUf ? (
+ +
+ +          <UfDetailView
+ +            uf={selectedUf}
+ +
+ +            moduleTitle={
+ +              modules.find(
+ +                module =>
+ +                  module.unitatsFormatives.some(
+ +                    uf =>
+ +                      uf.id === selectedUf.id
+ +                  )
+ +              )?.titol || 'Mòdul'
+ +            }
+ +
+ +            onBack={() =>
+ +              setSelectedUf(null)
+ +            }
+ +
+ +            onSaveAttempt={
+ +              handleSaveAttempt
+ +            }
+ +          />
+ +
+ +
+ +        /* ====================================================
+ +           VISTA DE MÓDULO
+ +           ==================================================== */
+ +
+ +        ) : selectedModuleId &&
+ +          modules.find(
+ +            module =>
+ +              module.id === selectedModuleId
+ +          ) ? (
+ +
+ +          <ModuleDetailView
+ +
+ +            module={
+ +              modules.find(
+ +                module =>
+ +                  module.id === selectedModuleId
+ +              )!
+ +            }
+ +
+ +            onBack={() =>
+ +              setSelectedModuleId(null)
+ +            }
+ +
+ +            onSelectUf={uf => {
+ +
+ +              const module =
+ +                modules.find(
+ +                  module =>
+ +                    module.unitatsFormatives.some(
+ +                      moduleUf =>
+ +                        moduleUf.id === uf.id
+ +                    )
+ +                );
+ +
+ +              if (!module) {
+ +                return;
+ +              }
+ +
+ +              handleSelectUf(
+ +                module,
+ +                uf
+ +              );
+ +            }}
+ +
+ +          />
+ +
+ +
+ +        /* ====================================================
+ +           ADMIN
+ +           ==================================================== */
+ +
+ +        ) : activeTab === 'admin' ? (
+ +
+ +          <AdminPanel
+ +            users={users}
+ +            onApproveUser={handleApproveUser}
+ +            onRejectUser={handleRejectUser}
+ +            modules={modules}
+ +            onAddPdfToUf={handleAddPdfToUf}
+ +          />
+ +
+ +
+ +        /* ====================================================
+ +           PROGRESO
+ +           ==================================================== */
+ +
+ +        ) : activeTab === 'progres' ? (
+ +
+ +          <ProgressDashboard
+ +            currentUser={currentUser}
+ +            attempts={attempts}
+ +            modules={modules}
+ +          />
+ +
+ +
+ +        /* ====================================================
+ +           CATÁLOGO DE CURSOS
+ +           ==================================================== */
+ +
+ +        ) : (
+ +
+ +          <div className="space-y-8">
+ +
+ +
+ +            {/* ==================================================
+ +                HERO DEL CATÁLOGO
+ +                ================================================== */}
+ +
+ +            <div className="bg-white border border-slate-200 rounded-xl p-6 sm:p-8 shadow-sm">
+ +
+ +              <div className="space-y-4 max-w-4xl">
+ +
+++=======
++       {/* Main Container */}
++       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
++         {/* Check if user is unapproved student trying to access courses */}
++         {currentUser.role === 'alumne' && currentUser.estatPagament !== 'aprovat' && activeTab === 'cursos' ? (
++           /* Access Restricted Screen for Unapproved Students */
++           <div className="space-y-8 animate-fade-in">
++             {/* Restricted Access Banner */}
++             <div className="bg-white border-2 border-amber-200 rounded-xl p-8 shadow-sm text-center max-w-2xl mx-auto">
++               <div className="space-y-4">
++                 <div className="flex justify-center">
++                   <div className="w-16 h-16 rounded-full bg-amber-50 border-2 border-amber-200 flex items-center justify-center">
++                     <Lock className="w-8 h-8 text-amber-600" />
++                   </div>
++                 </div>
++                 <h2 className="text-2xl font-bold text-slate-900">Accés Restringit</h2>
++                 <p className="text-slate-600 text-sm max-w-md mx-auto">
++                   Per accedir al temari complet i als exàmens, primer necessites completar el procés de verificació del pagament de la quota d'oposició.
++                 </p>
++                 <div className="pt-4 space-y-3">
++                   <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider">Estat de la teva sol·licitud:</p>
++                   <div className="inline-flex items-center gap-3 px-4 py-2 bg-amber-50 border border-amber-200 rounded-lg">
++                     <Clock className="w-5 h-5 text-amber-600 animate-spin" />
++                     <span className="text-sm font-semibold text-amber-900">Pendent de Verificació</span>
++                   </div>
++                 </div>
++                 <button
++                   onClick={() => setIsRegistrationOpen(true)}
++                   className="mt-6 px-6 py-3 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-sm transition-colors inline-flex items-center gap-2"
++                 >
++                   <FileText className="w-4 h-4" />
++                   Veure / Enviar Comprovant de Pagament
++                 </button>
++               </div>
++             </div>
++           </div>
++         ) : (
++           /* Normal Content for Approved Users */
++           <>
++             {/* Render Selected UF Detail Page */}
++             {selectedUf ? (
++               <UfDetailView
++                 uf={selectedUf}
++                 moduleTitle={modules.find(m => m.unitatsFormatives.some(u => u.id === selectedUf.id))?.titol || 'Mòdul'}
++                 onBack={() => setSelectedUf(null)}
++                 onSaveAttempt={handleSaveAttempt}
++               />
++             ) : selectedModuleId && modules.find(m => m.id === selectedModuleId) ? (
++               <ModuleDetailView
++                 module={modules.find(m => m.id === selectedModuleId)!}
++                 onBack={() => setSelectedModuleId(null)}
++                 onSelectUf={(uf) => {
++                   setSelectedUf(uf);
++                 }}
++               />
++             ) : activeTab === 'admin' ? (
++               /* Render Admin Management Panel */
++               <AdminPanel
++                 users={users}
++                 onApproveUser={handleApproveUser}
++                 onRejectUser={handleRejectUser}
++                 modules={modules}
++                 onAddPdfToUf={handleAddPdfToUf}
++               />
++             ) : activeTab === 'progres' ? (
++               /* Render Student Gradebook / Progress Dashboard */
++               <ProgressDashboard
++                 currentUser={currentUser}
++                 attempts={attempts}
++                 modules={modules}
++               />
++             ) : (
++               /* Main Courses / Modules View */
++               <div className="space-y-8 animate-fade-in">
++             {/* Hero Welcome Banner */}
++             <div className="bg-white border border-slate-200 rounded-xl p-6 sm:p-8 shadow-sm relative overflow-hidden flex flex-col md:flex-row items-start justify-between gap-6">
++               <div className="relative z-10 space-y-3 max-w-3xl">
+++>>>>>>> theirs
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-bold uppercase tracking-wider">
+ +
+                    <Shield className="w-3.5 h-3.5" />
+ -                  Plataforma Moodle per a Oposicions de Seguretat Pública
+ +
+ +                  Preparación para Seguridad Pública
+ +
+                  </div>
+  
+ -                <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight leading-tight">
+ -                  Curs de Formació Bàsica per a Policies <span className="text-indigo-600">2026-2027</span>
+ -                </h1>
+  
+ -                <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+ -                  Accedeix als <strong>7 Mòduls Oficials del Curs</strong>, genera targetes Flash d'urgència per estudiar el dia d'abans i posa't a prova amb exàmens simulats <strong>basats en el temari oficial</strong>.
+ -                </p>
+ +                <div>
+ +
+ +                  <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
+ +
+ +                    Prepara tu oposición
+ +                    <span className="text-indigo-600">
+ +                      {' '}con ALPHA 13
+ +                    </span>
+ +
+ +                  </h1>
+ +
+ +                  <p className="text-sm sm:text-base text-slate-600 mt-2 max-w-2xl">
+ +
+ +                    Accede al contenido de preparación,
+ +                    practica con tests y sigue tu progreso
+ +                    desde una única plataforma.
+ +
+ +                  </p>
+ +
+ +                </div>
+ +
+ +
+ +                {/* =================================================
+ +                    INDICADORES FREEMIUM
+ +                    ================================================= */}
+ +
+ +                {!isPremium && (
+ +
+ +                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+ +
+ +                    <div className="flex items-center gap-2 p-3 rounded-lg bg-slate-50 border border-slate-200">
+ +
+ +                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+ +
+ +                      <span className="text-xs text-slate-700">
+ +                        Explora los módulos
+ +                      </span>
+ +
+ +                    </div>
+ +
+ +
+ +                    <div className="flex items-center gap-2 p-3 rounded-lg bg-slate-50 border border-slate-200">
+ +
+ +                      <BookOpen className="w-4 h-4 text-indigo-600 shrink-0" />
+ +
+ +                      <span className="text-xs text-slate-700">
+ +                        Primera UF gratuita
+ +                      </span>
+ +
+ +                    </div>
+ +
+ +
+ +                    <div className="flex items-center gap-2 p-3 rounded-lg bg-slate-50 border border-slate-200">
+ +
+ +                      <Lock className="w-4 h-4 text-slate-500 shrink-0" />
+ +
+ +                      <span className="text-xs text-slate-700">
+ +                        Más contenido con Premium
+ +                      </span>
+ +
+ +                    </div>
+ +
+ +                  </div>
+ +
+ +                )}
+ +
+ +
+ +                {/* =================================================
+ +                    BUSCADOR
+ +                    ================================================= */}
+  
+ -                {/* Search input */}
+                  <div className="pt-2 relative max-w-xl">
+ +
+                    <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+ +
+                    <input
+                      type="text"
+                      value={searchQuery}
+@@@ -678,384 -309,91 +843,452 @@@
+                    <ModuleCard
+                      key={module.id}
+                      module={module}
+++<<<<<<< ours
+ +
+ +                    onSelectModule={id =>
+ +                      setSelectedModuleId(id)
+ +                    }
+ +
+ +                    onSelectUf={uf =>
+ +                      handleSelectUf(
+ +                        module,
+ +                        uf
+ +                      )
+ +                    }
+++=======
++                     onSelectModule={(id) => setSelectedModuleId(id)}
++                     onSelectUf={(uf) => {
++                       setSelectedUf(uf);
++                     }}
+++>>>>>>> theirs
+                    />
+ +
+                  ))}
+ +
+                </div>
+ +
+ +
+ +              {/* =================================================
+ +                  SIN RESULTADOS
+ +                  ================================================= */}
+ +
+ +              {filteredModules.length === 0 && (
+ +
+ +                <div className="bg-white border border-slate-200 rounded-xl p-10 text-center">
+ +
+ +                  <Search className="w-8 h-8 text-slate-300 mx-auto mb-3" />
+ +
+ +                  <h3 className="font-bold text-slate-800">
+ +                    No se han encontrado resultados
+ +                  </h3>
+ +
+ +                  <p className="text-sm text-slate-500 mt-1">
+ +                    Prueba con otro término de búsqueda.
+ +                  </p>
+ +
+ +                </div>
+ +
+ +              )}
+ +
+              </div>
+++<<<<<<< ours
+ +
+ +
+ +            {/* ==================================================
+ +                CTA PREMIUM
+ +                ================================================== */}
+ +
+ +            {!isPremium && (
+ +
+ +              <div className="bg-slate-900 rounded-2xl p-6 sm:p-8 text-white">
+ +
+ +                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+ +
+ +                  <div className="max-w-2xl">
+ +
+ +                    <div className="inline-flex items-center gap-2 text-indigo-300 text-xs font-bold uppercase tracking-wider mb-2">
+ +
+ +                      <Sparkles className="w-4 h-4" />
+ +
+ +                      ALPHA 13 Premium
+ +
+ +                    </div>
+ +
+ +                    <h2 className="text-xl sm:text-2xl font-bold">
+ +
+ +                      Accede a toda la preparación
+ +
+ +                    </h2>
+ +
+ +                    <p className="text-sm text-slate-300 mt-2">
+ +
+ +                      Desbloquea el temario completo,
+ +                      todos los tests, simulacros,
+ +                      estadísticas y el resto de funcionalidades
+ +                      de la plataforma.
+ +
+ +                    </p>
+ +
+ +                  </div>
+ +
+ +
+ +                  <button
+ +                    onClick={() =>
+ +                      setIsRegistrationOpen(true)
+ +                    }
+ +                    className="shrink-0 px-6 py-3 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm transition-colors"
+ +                  >
+ +                    Ver planes Premium
+ +                  </button>
+ +
+ +                </div>
+ +
+ +              </div>
+ +
+ +            )}
+ +
+ +          </div>
+ +
+++=======
++               </div>
++             )}
++           </>
+++>>>>>>> theirs
+          )}
+ +
+        </main>
+  
+ -      {/* Footer */}
+ +
+ +      {/* ======================================================
+ +          FOOTER
+ +          ====================================================== */}
+ +
+        <footer className="bg-white border-t border-slate-200 text-slate-500 py-6 mt-12 text-center text-xs">
+ +
+          <div className="max-w-7xl mx-auto px-4 flex flex-wrap items-center justify-between gap-4">
+ +
+            <div className="flex items-center gap-2">
+ +
+              <Shield className="w-4 h-4 text-indigo-600" />
+ -            <span className="font-semibold text-slate-700">Acadèmia ALPHA 13 • Curs 2026-2027</span>
+ +
+ +            <span className="font-semibold text-slate-700">
+ +              ALPHA 13 • Curs 2026-2027
+ +            </span>
+ +
+            </div>
+ -          <p>© 2026 ALPHA 13. Tots els drets reservats.</p>
+ +
+ +          <p>
+ +            © 2026 ALPHA 13. Tots els drets reservats.
+ +          </p>
+ +
+          </div>
+ +
+        </footer>
+  
+ -      {/* Registration Modal */}
+ +
+ +      {/* ======================================================
+ +          MODAL DE REGISTRO
+ +          ====================================================== */}
+ +
+        <RegistrationModal
+          isOpen={isRegistrationOpen}
+ -        onClose={() => setIsRegistrationOpen(false)}
+ +
+ +        onClose={() =>
+ +          setIsRegistrationOpen(false)
+ +        }
+ +
+          currentUser={currentUser}
+ -        onSubmitRegistration={handleSubmitRegistration}
+ +
+ +        onSubmitRegistration={
+ +          handleSubmitRegistration
+ +        }
+        />
+ +
+      </div>
+    );
+  }
+  
+ +
+ +// ============================================================
+ +// PANTALLA DE AUTENTICACIÓN
+ +// ============================================================
+ +
+ +function AuthScreenWrapper() {
+ +
+ +  const [screen, setScreen] =
+ +    useState<'login' | 'register' | 'payment'>('login');
+ +
+ +  const [registeredUser, setRegisteredUser] =
+ +    useState<UserProfile | null>(null);
+ +
+ +  const [selectedPlanId, setSelectedPlanId] =
+ +    useState<'basic' | 'pro' | null>(null);
+ +
+ +
+ +  const handleSelectPlan = (
+ +    planId: 'basic' | 'pro'
+ +  ) => {
+ +
+ +    setSelectedPlanId(planId);
+ +
+ +    console.log(
+ +      'Plan seleccionado:',
+ +      planId
+ +    );
+ +  };
+ +
+ +
+ +  const handleContinueToPayment = () => {
+ +
+ +    if (!selectedPlanId) {
+ +
+ +      alert(
+ +        'Por favor, selecciona un plan primero.'
+ +      );
+ +
+ +      return;
+ +    }
+ +
+ +
+ +    if (registeredUser) {
+ +
+ +      const updatedUser = {
+ +
+ +        ...registeredUser,
+ +
+ +        plan: selectedPlanId,
+ +
+ +        estatPagament:
+ +          'pendent' as const
+ +
+ +      };
+ +
+ +
+ +      setRegisteredUser(
+ +        updatedUser
+ +      );
+ +
+ +
+ +      const storedUsers =
+ +        JSON.parse(
+ +          localStorage.getItem(
+ +            'auth_users'
+ +          ) || '[]'
+ +        );
+ +
+ +
+ +      const updatedStoredUsers =
+ +        storedUsers.map(
+ +          (user: UserProfile) =>
+ +            user.id === updatedUser.id
+ +              ? updatedUser
+ +              : user
+ +        );
+ +
+ +
+ +      localStorage.setItem(
+ +        'auth_users',
+ +        JSON.stringify(
+ +          updatedStoredUsers
+ +        )
+ +      );
+ +
+ +
+ +      console.log(
+ +        'Usuario con plan guardado:',
+ +        updatedUser
+ +      );
+ +
+ +
+ +      alert(
+ +        `Has seleccionado el plan ${
+ +          selectedPlanId === 'basic'
+ +            ? 'Básico ($4.99)'
+ +            : 'Pro ($9.99)'
+ +        }. Ahora procederemos al pago.`
+ +      );
+ +
+ +    }
+ +
+ +  };
+ +
+ +
+ +  return (
+ +
+ +    <div className="min-h-screen bg-[#f8fafc]">
+ +
+ +      {screen === 'login' ? (
+ +
+ +        <LoginScreen
+ +          onSwitchToRegister={() =>
+ +            setScreen('register')
+ +          }
+ +        />
+ +
+ +      ) : screen === 'payment' ? (
+ +
+ +        <div className="max-w-7xl mx-auto px-4 py-12">
+ +
+ +          <div className="text-center mb-12">
+ +
+ +            <h1 className="text-3xl md:text-4xl font-bold text-slate-900">
+ +              Elige tu plan de suscripción
+ +            </h1>
+ +
+ +            <p className="text-slate-600 mt-2 text-sm md:text-base">
+ +              Selecciona el plan que mejor se adapte a tus necesidades de estudio
+ +            </p>
+ +
+ +          </div>
+ +
+ +
+ +          <PricingCards
+ +            selectedPlanId={selectedPlanId}
+ +            onSelectPlan={handleSelectPlan}
+ +          />
+ +
+ +
+ +          {selectedPlanId && (
+ +
+ +            <div className="mt-8 text-center">
+ +
+ +              <button
+ +                onClick={
+ +                  handleContinueToPayment
+ +                }
+ +                className="px-8 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg transition-colors"
+ +              >
+ +                Continuar con el pago →
+ +              </button>
+ +
+ +            </div>
+ +
+ +          )}
+ +
+ +        </div>
+ +
+ +      ) : (
+ +
+ +        <RegisterScreen
+ +
+ +          onSwitchToLogin={() =>
+ +            setScreen('login')
+ +          }
+ +
+ +          onSwitchToPayment={user => {
+ +
+ +            setRegisteredUser(user);
+ +
+ +            setScreen('payment');
+ +
+ +          }}
+ +
+ +        />
+ +
+ +      )}
+ +
+ +    </div>
+ +
+ +  );
+ +}
+ +
+++<<<<<<< ours
+ +
+ +// ============================================================
+ +// APP ROOT
+ +// ============================================================
+ +
+ +function AppRoot() {
+ +
+ +  const {
+ +    isAuthenticated
+ +  } = useAuth();
+ +
+ +
+ +  if (!isAuthenticated) {
+ +
+ +    return (
+ +      <AuthScreenWrapper />
+ +    );
+ +
+ +  }
+ +
+ +
+ +  return (
+ +    <AppContent />
+ +  );
+ +
+ +}
+ +
+ +
+ +// ============================================================
+ +// EXPORTACIÓN PRINCIPAL
+ +// ============================================================
+ +
+ +export default function App() {
+ +
+ +  return (
+ +
+ +    <AuthProvider>
+ +
+ +      <AppRoot />
+ +
+ +    </AuthProvider>
+ +
+ +  );
+ +
+- }
+++}
+++=======
++ /**
++  * Auth Screen Wrapper: Handles login/register/payment UI
++  */
++ function AuthScreenWrapper() {
++   const [screen, setScreen] = useState<'login' | 'register' | 'payment'>('login');
++   const [registeredUser, setRegisteredUser] = useState<UserProfile | null>(null);
++ 
++   return (
++     <>
++       {screen === 'login' ? (
++         <LoginScreen onSwitchToRegister={() => setScreen('register')} />
++       ) : screen === 'payment' ? (
++         <PaymentScreen
++           user={registeredUser!}
++           onSwitchToLogin={() => setScreen('login')}
++         />
++       ) : (
++         <RegisterScreen
++           onSwitchToLogin={() => setScreen('login')}
++           onSwitchToPayment={(user) => {
++             setRegisteredUser(user);
++             setScreen('payment');
++           }}
++         />
++       )}
++     </>
++   );
++ }
++ 
++ /**
++  * App Root: Handles authentication and routing
++  */
++ function AppRoot() {
++   const { isAuthenticated } = useAuth();
++ 
++   if (!isAuthenticated) {
++     return <AuthScreenWrapper />;
++   }
++ 
++   return <AppContent />;
++ }
++ 
++ /**
++  * Main App export with AuthProvider wrapper
++  */
++ export default function App() {
++   return (
++     <AuthProvider>
++       <AppRoot />
++     </AuthProvider>
++   );
++ }
+++>>>>>>> theirs

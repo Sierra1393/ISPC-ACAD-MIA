@@ -1,20 +1,29 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
- * 
- * Login Screen Component
+ *
+ * Component de pantalla d'inici de sessió
  */
 
 import React, { useState } from 'react';
-import { Shield, Mail, Lock, ArrowRight, AlertCircle } from 'lucide-react';
+import {
+  Shield,
+  Mail,
+  Lock,
+  ArrowRight,
+  AlertCircle
+} from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
 interface LoginScreenProps {
   onSwitchToRegister: () => void;
 }
 
-export const LoginScreen: React.FC<LoginScreenProps> = ({ onSwitchToRegister }) => {
+export const LoginScreen: React.FC<LoginScreenProps> = ({
+  onSwitchToRegister
+}) => {
   const { login } = useAuth();
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -26,132 +35,212 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSwitchToRegister }) 
     setIsLoading(true);
 
     if (!email || !password) {
-      setError('Completa todos los campos');
+      setError('Completa tots els camps');
       setIsLoading(false);
       return;
     }
 
     const result = await login(email, password);
+
     if (!result.success) {
-      setError(result.error || 'Error al iniciar sesión');
+      setError(result.error || 'Error en iniciar la sessió');
     }
+
     setIsLoading(false);
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-slate-50 flex items-center justify-center p-4">
+
       <div className="w-full max-w-md">
-        {/* Header */}
+
+        {/* Capçalera */}
+
         <div className="text-center mb-8 space-y-2">
+
           <div className="flex items-center justify-center gap-2 mb-4">
+
             <div className="w-12 h-12 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-lg">
               <Shield className="w-7 h-7" />
             </div>
-            <span className="text-2xl font-bold text-slate-900">ISPC-ACAD-MIA</span>
+
+            <span className="text-2xl font-bold text-slate-900">
+              ISPC-ACAD-MIA
+            </span>
+
           </div>
-          <h1 className="text-3xl font-bold text-slate-900">Iniciar Sesión</h1>
+
+          <h1 className="text-3xl font-bold text-slate-900">
+            Inicia sessió
+          </h1>
+
           <p className="text-slate-600 text-sm">
-            Plataforma de Formación para Oposiciones de Seguridad Pública
+            Plataforma de formació per a oposicions de seguretat pública
           </p>
+
         </div>
 
-        {/* Login Form */}
-        <form onSubmit={handleSubmit} className="bg-white border border-slate-200 rounded-xl shadow-sm p-6 space-y-5">
-          {/* Email Input */}
+        {/* Formulari d'inici de sessió */}
+
+        <form
+          onSubmit={handleSubmit}
+          className="bg-white border border-slate-200 rounded-xl shadow-sm p-6 space-y-5"
+        >
+
+          {/* Correu electrònic */}
+
           <div className="space-y-2">
-            <label htmlFor="email" className="block text-sm font-semibold text-slate-700">
-              Correo Electrónico
+
+            <label
+              htmlFor="email"
+              className="block text-sm font-semibold text-slate-700"
+            >
+              Correu electrònic
             </label>
+
             <div className="relative">
+
               <Mail className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+
               <input
                 id="email"
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="usuario@ejemplo.cat"
+                onChange={(e) =>
+                  setEmail(e.target.value)
+                }
+                placeholder="usuari@exemple.cat"
                 className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
               />
+
             </div>
+
           </div>
 
-          {/* Password Input */}
+          {/* Contrasenya */}
+
           <div className="space-y-2">
-            <label htmlFor="password" className="block text-sm font-semibold text-slate-700">
-              Contraseña
+
+            <label
+              htmlFor="password"
+              className="block text-sm font-semibold text-slate-700"
+            >
+              Contrasenya
             </label>
+
             <div className="relative">
+
               <Lock className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+
               <input
                 id="password"
                 type="password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Escribe tu contraseña"
+                onChange={(e) =>
+                  setPassword(e.target.value)
+                }
+                placeholder="Escriu la teva contrasenya"
                 className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
               />
+
             </div>
+
           </div>
 
-          {/* Error Message */}
+          {/* Missatge d'error */}
+
           {error && (
             <div className="flex items-start gap-3 p-3 rounded-lg bg-red-50 border border-red-200">
+
               <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
-              <p className="text-sm text-red-700">{error}</p>
+
+              <p className="text-sm text-red-700">
+                {error}
+              </p>
+
             </div>
           )}
 
-          {/* Submit Button */}
+          {/* Botó d'inici de sessió */}
+
           <button
             type="submit"
             disabled={isLoading}
             className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white font-bold py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm"
           >
+
             {isLoading ? (
               <>
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                Iniciando sesión...
+
+                Iniciant sessió...
               </>
             ) : (
               <>
-                Iniciar Sesión
+                Inicia sessió
+
                 <ArrowRight className="w-4 h-4" />
               </>
             )}
+
           </button>
+
         </form>
 
-        {/* Register Link */}
+        {/* Enllaç de registre */}
+
         <div className="mt-6 text-center space-y-4">
+
           <p className="text-slate-600 text-sm">
-            ¿Aún no tienes cuenta?{' '}
+
+            Encara no tens compte?{' '}
+
             <button
+              type="button"
               onClick={onSwitchToRegister}
               className="text-indigo-600 font-semibold hover:text-indigo-700 transition-colors"
             >
-              Crear una cuenta
+              Crear un compte
             </button>
+
           </p>
 
-          {/* Demo Credentials */}
+          {/* Credencials de demostració */}
+
           <div className="pt-4 border-t border-slate-200 space-y-2">
+
             <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
-              Cuentas de Prueba (Demo)
+              Comptes de prova (demo)
             </p>
+
             <div className="space-y-1.5 text-[11px] text-slate-600 bg-slate-50 p-3 rounded-lg border border-slate-200">
+
               <div>
-                <span className="font-semibold">Admin:</span> admin@oposicions-policia.cat
+                <span className="font-semibold">
+                  Administrador:
+                </span>{' '}
+                admin@oposicions-policia.cat
               </div>
+
               <div>
-                <span className="font-semibold">Alumno Aprobado:</span> marc.soler@email.cat
+                <span className="font-semibold">
+                  Alumne aprovat:
+                </span>{' '}
+                marc.soler@email.cat
               </div>
+
               <div className="text-[10px] text-slate-500 mt-2">
-                (Cualquier contraseña funciona para las cuentas de prueba)
+                (Qualsevol contrasenya funciona per als comptes de prova)
               </div>
+
             </div>
+
           </div>
+
         </div>
+
       </div>
+
     </div>
   );
 };

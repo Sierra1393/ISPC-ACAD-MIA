@@ -7,9 +7,13 @@ export interface UserProfile {
   email: string;
   password: string;
   fullName: string;
+  nom: string;
+  dni: string;
+  oposicio: string;
   role: 'alumne' | 'admin';
   estatPagament: 'pendent' | 'aprovat' | 'rebutjat';
   dataPagament?: string;
+  dataRegistre?: string;
   motiuRebuig?: string;
   plan?: 'basic' | 'pro' | null;
   avatar?: string;

@@ -26,15 +26,20 @@ import {
   Shield,
   BookOpen,
   Lock,
-  Clock,
-  FileText,
   Sparkles,
   CheckCircle2
 } from 'lucide-react';
 
+// ============================================================
+// TIPUS DE PLA
+// ============================================================
+
+type PlanId = 'basic' | 'pro';
+
+const FREE_PLAN_LABEL = 'Gratuït';
 
 // ============================================================
-// COMPONENTE PRINCIPAL DESPUÉS DEL LOGIN
+// COMPONENT PRINCIPAL DESPRÉS DEL LOGIN
 // ============================================================
 
 function AppContent() {
@@ -42,14 +47,19 @@ function AppContent() {
     currentUser,
     users,
     setUsers,
-    devSwitchUser
+    devSwitchUser,
+    logout
   } = useAuth();
 
-  const [activeTab, setActiveTab] = useState<string>(
-    currentUser?.role === 'admin' ? 'admin' : 'cursos'
-  );
+  // ============================================================
+  // ESTAT DE NAVEGACIÓ
+  // ============================================================
 
-  const [selectedModuleId, setSelectedModuleId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] =
+    useState<string>('cursos');
+
+  const [selectedModuleId, setSelectedModuleId] =
+    useState<string | null>(null);
 
   const [selectedUf, setSelectedUf] =
     useState<FormativeUnit | null>(null);
@@ -63,50 +73,92 @@ function AppContent() {
   const [searchQuery, setSearchQuery] =
     useState('');
 
+  // ============================================================
+  // INTENTS D'EXAMEN
+  // ============================================================
+
   const [attempts, setAttempts] =
-    useState<ExamAttempt[]>([]);
+    useState<ExamAttempt[]>([
+      {
+        id: 'att-1',
+        ufId: 'UF 1.1',
+        data: '05/02/2026',
+        puntuacio: 8.5,
+        totalPreguntes: 4,
+        encerts: 3,
+        tempsSegons: 120
+      }
+    ]);
 
   if (!currentUser) {
     return null;
   }
 
+  // ============================================================
+  // PLA ACTUAL
+  // ============================================================
 
-  // ==========================================================
-  // ESTADO DE ACCESO
-  // ==========================================================
+  /*
+   * GRATUÏT:
+   * Usuari registrat sense cap pla actiu.
+   *
+   * BÀSIC:
+   * Pla Bàsic aprovat.
+   *
+   * PRO:
+   * Pla Pro aprovat.
+   *
+   * ADMIN:
+   * Accés complet independentment del pagament.
+   */
 
-  const isPremium =
-    currentUser.role === 'admin' ||
+  const currentPlan: PlanId | null =
+    currentUser.plan === 'basic' ||
+    currentUser.plan === 'pro'
+      ? currentUser.plan
+      : null;
+
+  const isAdmin =
+    currentUser.role === 'admin';
+
+  const isBasic =
+    currentPlan === 'basic' &&
     currentUser.estatPagament === 'aprovat';
 
+  const isPro =
+    currentPlan === 'pro' &&
+    currentUser.estatPagament === 'aprovat';
 
-  // ==========================================================
-  // CAMBIO DE USUARIO PARA DESARROLLO
-  // ==========================================================
+  const isPremium =
+    isBasic ||
+    isPro ||
+    isAdmin;
 
-  const handleDevSwitchUser = (userId: string) => {
+  const planLabel = isAdmin
+    ? 'Admin'
+    : isPro
+      ? 'Pro'
+      : isBasic
+        ? 'Bàsic'
+        : FREE_PLAN_LABEL;
+
+  // ============================================================
+  // CANVI D'USUARI PER DESENVOLUPAMENT
+  // ============================================================
+
+  const handleDevSwitchUser = (
+    userId: string
+  ) => {
     devSwitchUser(userId);
 
-    const user = users.find(
-      usr => usr.id === userId
-    );
-
-    if (user) {
-      setActiveTab(
-        user.role === 'admin'
-          ? 'admin'
-          : 'cursos'
-      );
-
-      setSelectedUf(null);
-      setSelectedModuleId(null);
-    }
+    setActiveTab('cursos');
+    setSelectedUf(null);
+    setSelectedModuleId(null);
   };
 
-
-  // ==========================================================
-  // REGISTRO / COMPROBANTE
-  // ==========================================================
+  // ============================================================
+  // REGISTRE / JUSTIFICANT
+  // ============================================================
 
   const handleSubmitRegistration = (
     data: Partial<UserProfile>
@@ -126,20 +178,24 @@ function AppContent() {
     );
   };
 
+  // ============================================================
+  // ADMINISTRACIÓ DE PAGAMENTS
+  // ============================================================
 
-  // ==========================================================
-  // ADMINISTRACIÓN DE PAGOS
-  // ==========================================================
-
-  const handleApproveUser = (userId: string) => {
+  const handleApproveUser = (
+    userId: string
+  ) => {
     setUsers(
       users.map(user => {
         if (user.id === userId) {
           return {
             ...user,
-            estatPagament: 'aprovat' as const,
+            estatPagament:
+              'aprovat' as const,
             dataPagament:
-              new Date().toLocaleDateString('ca-ES')
+              new Date().toLocaleDateString(
+                'ca-ES'
+              )
           };
         }
 
@@ -147,7 +203,6 @@ function AppContent() {
       })
     );
   };
-
 
   const handleRejectUser = (
     userId: string,
@@ -158,7 +213,8 @@ function AppContent() {
         if (user.id === userId) {
           return {
             ...user,
-            estatPagament: 'rebutjat' as const,
+            estatPagament:
+              'rebutjat' as const,
             motiuRebuig: motiu
           };
         }
@@ -168,10 +224,9 @@ function AppContent() {
     );
   };
 
-
-  // ==========================================================
-  // AÑADIR PDF DESDE ADMIN
-  // ==========================================================
+  // ============================================================
+  // AFEGIR PDF DES DE L'ADMIN
+  // ============================================================
 
   const handleAddPdfToUf = (
     moduleCode: string,
@@ -187,7 +242,6 @@ function AppContent() {
 
         return {
           ...module,
-
           unitatsFormatives:
             module.unitatsFormatives.map(uf => {
               if (uf.code !== ufCode) {
@@ -205,10 +259,9 @@ function AppContent() {
     );
   };
 
-
-  // ==========================================================
-  // GUARDAR INTENTO DE EXAMEN
-  // ==========================================================
+  // ============================================================
+  // DESAR INTENT D'EXAMEN
+  // ============================================================
 
   const handleSaveAttempt = (
     attempt: ExamAttempt
@@ -219,30 +272,24 @@ function AppContent() {
     ]);
   };
 
-
-  // ==========================================================
-  // CONTROL DE ACCESO A LAS UFs
-  //
-  // FREEMIUM:
-  // - Primera UF de cada módulo = gratuita
-  // - Resto de UFs = Premium
-  // ==========================================================
+  // ============================================================
+  // CONTROL D'ACCÉS A LES UFs
+  // ============================================================
 
   const handleSelectUf = (
     module: Module,
     uf: FormativeUnit
   ) => {
-
-    // Administrador y usuarios Premium
-    // tienen acceso completo.
+    // ADMIN, BÀSIC APROVAT I PRO APROVAT
+    // tenen accés complet a les UFs.
     if (isPremium) {
       setSelectedUf(uf);
       return;
     }
 
-    // Para usuarios gratuitos:
-    // únicamente la primera UF del módulo
-    // está disponible.
+    // GRATUÏT:
+    // només pot accedir a la primera UF
+    // de cada mòdul.
     const firstUf =
       module.unitatsFormatives[0];
 
@@ -254,63 +301,70 @@ function AppContent() {
       return;
     }
 
-    // Si intenta acceder a una UF Premium,
-    // mostramos el mensaje de conversión.
     alert(
-      'Esta unidad forma parte del contenido Premium. Puedes explorar gratuitamente la primera unidad de cada módulo y después elegir tu plan.'
+      'Aquesta unitat forma part del contingut Premium. Pots accedir gratuïtament a la primera unitat formativa de cada mòdul. Tria un pla per desbloquejar la resta del contingut.'
     );
   };
 
-
-  // ==========================================================
-  // CONTADOR DE PAGOS PENDIENTES
-  // ==========================================================
+  // ============================================================
+  // COMPTADORS
+  // ============================================================
 
   const pendingCount =
     users.filter(
       user =>
-        user.estatPagament === 'pendent' &&
+        user.estatPagament ===
+          'pendent' &&
         user.role === 'alumne'
     ).length;
 
-
-  // ==========================================================
-  // BUSCADOR
-  // ==========================================================
+  // ============================================================
+  // FILTRE DE MÒDULS
+  // ============================================================
 
   const filteredModules =
     modules.filter(module =>
       module.titol
         .toLowerCase()
-        .includes(searchQuery.toLowerCase()) ||
-
+        .includes(
+          searchQuery.toLowerCase()
+        ) ||
       module.code
         .toLowerCase()
-        .includes(searchQuery.toLowerCase()) ||
-
+        .includes(
+          searchQuery.toLowerCase()
+        ) ||
       module.unitatsFormatives.some(
         uf =>
           uf.titol
             .toLowerCase()
-            .includes(searchQuery.toLowerCase())
+            .includes(
+              searchQuery.toLowerCase()
+            )
       )
     );
 
-
-  // ==========================================================
+  // ============================================================
   // RENDER
-  // ==========================================================
+  // ============================================================
 
   return (
     <div className="min-h-screen bg-[#f8fafc] text-slate-800 font-sans flex flex-col">
 
+      {/* ======================================================
+          NAVBAR
+      ====================================================== */}
+
       <Navbar
         currentUser={currentUser}
         users={users}
-        onSwitchUser={handleDevSwitchUser}
+        onSwitchUser={
+          handleDevSwitchUser
+        }
         onOpenRegistration={() =>
           setIsRegistrationOpen(true)
         }
+        onLogout={logout}
         activeTab={activeTab}
         setActiveTab={tab => {
           setActiveTab(tab);
@@ -320,192 +374,208 @@ function AppContent() {
         pendingCount={pendingCount}
       />
 
-
       {/* ======================================================
-          AVISO DE ACCESO FREEMIUM
-          ====================================================== */}
+          BANNER GRATUÏT
+      ====================================================== */}
 
       {currentUser.role === 'alumne' &&
         !isPremium && (
+          <div className="bg-indigo-50 border-b border-indigo-200">
 
-        <div className="bg-indigo-50 border-b border-indigo-200">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
 
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
 
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-start gap-3">
 
-              <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-indigo-100 border border-indigo-200 flex items-center justify-center shrink-0">
+                    <Sparkles className="w-4 h-4 text-indigo-600" />
+                  </div>
 
-                <div className="w-8 h-8 rounded-lg bg-indigo-100 border border-indigo-200 flex items-center justify-center shrink-0">
-                  <Sparkles className="w-4 h-4 text-indigo-600" />
+                  <div>
+
+                    <p className="text-sm font-semibold text-indigo-900">
+                      Estàs en el pla Gratuït
+                    </p>
+
+                    <p className="text-xs text-indigo-700 mt-0.5">
+                      Pots explorar tots els mòduls i accedir gratuïtament a la primera unitat formativa de cadascun.
+                    </p>
+
+                  </div>
+
+                </div>
+
+                <button
+                  onClick={() =>
+                    setIsRegistrationOpen(
+                      true
+                    )
+                  }
+                  className="shrink-0 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-colors"
+                >
+                  Veure plans
+                </button>
+
+              </div>
+
+            </div>
+
+          </div>
+        )}
+
+      {/* ======================================================
+          BANNER BÀSIC
+      ====================================================== */}
+
+      {currentUser.role === 'alumne' &&
+        isBasic && (
+          <div className="bg-blue-50 border-b border-blue-200">
+
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+
+              <div className="flex items-center gap-3">
+
+                <div className="w-8 h-8 rounded-lg bg-blue-100 border border-blue-200 flex items-center justify-center">
+                  <CheckCircle2 className="w-4 h-4 text-blue-600" />
                 </div>
 
                 <div>
-                  <p className="text-sm font-semibold text-indigo-900">
-                    Estás en modo gratuito
+
+                  <p className="text-sm font-semibold text-blue-900">
+                    Pla Bàsic actiu
                   </p>
 
-                  <p className="text-xs text-indigo-700 mt-0.5">
-                    Explora los módulos y accede gratuitamente
-                    a la primera unidad formativa de cada uno.
+                  <p className="text-xs text-blue-700">
+                    Tens accés complet al contingut inclòs en el teu pla.
                   </p>
+
                 </div>
 
               </div>
 
-              <button
-                onClick={() =>
-                  setIsRegistrationOpen(true)
-                }
-                className="shrink-0 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-colors"
-              >
-                Ver opciones Premium
-              </button>
-
             </div>
 
           </div>
-
-        </div>
-      )}
-
+        )}
 
       {/* ======================================================
-          AVISO DE CUENTA APROBADA
-          ====================================================== */}
+          BANNER PRO
+      ====================================================== */}
 
       {currentUser.role === 'alumne' &&
-        isPremium && (
+        isPro && (
+          <div className="bg-emerald-50 border-b border-emerald-200">
 
-        <div className="bg-emerald-50 border-b border-emerald-200">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
 
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+              <div className="flex items-center gap-3">
 
-            <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-emerald-100 border border-emerald-200 flex items-center justify-center">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                </div>
 
-              <div className="w-8 h-8 rounded-lg bg-emerald-100 border border-emerald-200 flex items-center justify-center">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-              </div>
+                <div>
 
-              <div>
-                <p className="text-sm font-semibold text-emerald-900">
-                  Acceso Premium activo
-                </p>
+                  <p className="text-sm font-semibold text-emerald-900">
+                    Pla Pro actiu
+                  </p>
 
-                <p className="text-xs text-emerald-700">
-                  Tienes acceso completo al contenido de la plataforma.
-                </p>
+                  <p className="text-xs text-emerald-700">
+                    Tens accés complet al contingut i a les funcionalitats Pro.
+                  </p>
+
+                </div>
+
               </div>
 
             </div>
 
           </div>
-
-        </div>
-      )}
-
+        )}
 
       {/* ======================================================
-          CONTENIDO PRINCIPAL
-          ====================================================== */}
+          CONTINGUT PRINCIPAL
+      ====================================================== */}
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-
-
-        {/* ====================================================
-            VISTA DE UF
-            ==================================================== */}
 
         {selectedUf ? (
 
           <UfDetailView
             uf={selectedUf}
-
             moduleTitle={
-              modules.find(
-                module =>
-                  module.unitatsFormatives.some(
-                    uf =>
-                      uf.id === selectedUf.id
-                  )
-              )?.titol || 'Mòdul'
+              modules.find(module =>
+                module.unitatsFormatives.some(
+                  uf =>
+                    uf.id ===
+                    selectedUf.id
+                )
+              )?.titol ||
+              'Mòdul'
             }
-
             onBack={() =>
               setSelectedUf(null)
             }
-
             onSaveAttempt={
               handleSaveAttempt
             }
           />
 
-
-        /* ====================================================
-           VISTA DE MÓDULO
-           ==================================================== */
-
         ) : selectedModuleId &&
           modules.find(
             module =>
-              module.id === selectedModuleId
+              module.id ===
+              selectedModuleId
           ) ? (
 
           <ModuleDetailView
-
             module={
               modules.find(
                 module =>
-                  module.id === selectedModuleId
+                  module.id ===
+                  selectedModuleId
               )!
             }
-
             onBack={() =>
               setSelectedModuleId(null)
             }
-
             onSelectUf={uf => {
 
               const module =
-                modules.find(
-                  module =>
-                    module.unitatsFormatives.some(
-                      moduleUf =>
-                        moduleUf.id === uf.id
-                    )
+                modules.find(m =>
+                  m.unitatsFormatives.some(
+                    moduleUf =>
+                      moduleUf.id ===
+                      uf.id
+                  )
                 );
 
-              if (!module) {
-                return;
+              if (module) {
+                handleSelectUf(
+                  module,
+                  uf
+                );
               }
 
-              handleSelectUf(
-                module,
-                uf
-              );
             }}
-
           />
-
-
-        /* ====================================================
-           ADMIN
-           ==================================================== */
 
         ) : activeTab === 'admin' ? (
 
           <AdminPanel
             users={users}
-            onApproveUser={handleApproveUser}
-            onRejectUser={handleRejectUser}
+            onApproveUser={
+              handleApproveUser
+            }
+            onRejectUser={
+              handleRejectUser
+            }
             modules={modules}
-            onAddPdfToUf={handleAddPdfToUf}
+            onAddPdfToUf={
+              handleAddPdfToUf
+            }
           />
-
-
-        /* ====================================================
-           PROGRESO
-           ==================================================== */
 
         ) : activeTab === 'progres' ? (
 
@@ -515,19 +585,13 @@ function AppContent() {
             modules={modules}
           />
 
-
-        /* ====================================================
-           CATÁLOGO DE CURSOS
-           ==================================================== */
-
         ) : (
 
           <div className="space-y-8">
 
-
             {/* ==================================================
-                HERO DEL CATÁLOGO
-                ================================================== */}
+                HERO DEL CATÀLEG
+            ================================================== */}
 
             <div className="bg-white border border-slate-200 rounded-xl p-6 sm:p-8 shadow-sm">
 
@@ -537,39 +601,29 @@ function AppContent() {
 
                   <Shield className="w-3.5 h-3.5" />
 
-                  Preparación para Seguridad Pública
+                  Preparació per a la Seguretat Pública
 
                 </div>
-
 
                 <div>
 
                   <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
 
-                    Prepara tu oposición
+                    Prepara la teva oposició
+
                     <span className="text-indigo-600">
-                      {' '}con ALPHA 13
+                      {' '}amb ALPHA 13
                     </span>
 
                   </h1>
 
                   <p className="text-sm sm:text-base text-slate-600 mt-2 max-w-2xl">
-
-                    Accede al contenido de preparación,
-                    practica con tests y sigue tu progreso
-                    desde una única plataforma.
-
+                    Accedeix al contingut de preparació, practica amb tests i segueix el teu progrés des d'una única plataforma.
                   </p>
 
                 </div>
 
-
-                {/* =================================================
-                    INDICADORES FREEMIUM
-                    ================================================= */}
-
                 {!isPremium && (
-
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
 
                     <div className="flex items-center gap-2 p-3 rounded-lg bg-slate-50 border border-slate-200">
@@ -577,41 +631,33 @@ function AppContent() {
                       <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
 
                       <span className="text-xs text-slate-700">
-                        Explora los módulos
+                        Explora els mòduls
                       </span>
 
                     </div>
-
 
                     <div className="flex items-center gap-2 p-3 rounded-lg bg-slate-50 border border-slate-200">
 
                       <BookOpen className="w-4 h-4 text-indigo-600 shrink-0" />
 
                       <span className="text-xs text-slate-700">
-                        Primera UF gratuita
+                        Primera UF gratuïta
                       </span>
 
                     </div>
-
 
                     <div className="flex items-center gap-2 p-3 rounded-lg bg-slate-50 border border-slate-200">
 
                       <Lock className="w-4 h-4 text-slate-500 shrink-0" />
 
                       <span className="text-xs text-slate-700">
-                        Más contenido con Premium
+                        Més contingut amb Premium
                       </span>
 
                     </div>
 
                   </div>
-
                 )}
-
-
-                {/* =================================================
-                    BUSCADOR
-                    ================================================= */}
 
                 <div className="pt-2 relative max-w-xl">
 
@@ -625,7 +671,7 @@ function AppContent() {
                         e.target.value
                       )
                     }
-                    placeholder="Buscar por módulos, temas o unidades..."
+                    placeholder="Cerca per mòduls, temes o unitats..."
                     className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-10 pr-4 py-2.5 text-xs sm:text-sm focus:outline-none focus:border-indigo-600 focus:bg-white"
                   />
 
@@ -635,10 +681,9 @@ function AppContent() {
 
             </div>
 
-
             {/* ==================================================
-                MÓDULOS
-                ================================================== */}
+                LLISTA DE MÒDULS
+            ================================================== */}
 
             <div className="space-y-4">
 
@@ -648,7 +693,7 @@ function AppContent() {
 
                   <BookOpen className="w-5 h-5 text-indigo-600" />
 
-                  Módulos del curso
+                  Mòduls del curs
 
                   <span className="text-slate-400 font-normal">
                     ({filteredModules.length})
@@ -657,76 +702,62 @@ function AppContent() {
                 </h2>
 
                 {!isPremium && (
-
                   <p className="text-xs text-slate-500 mt-1">
-
-                    Puedes explorar todos los módulos.
-                    La primera unidad formativa de cada módulo
-                    está disponible gratuitamente.
-
+                    Pots explorar tots els mòduls. La primera unitat formativa de cada mòdul està disponible gratuïtament.
                   </p>
-
                 )}
 
               </div>
 
-
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
-                {filteredModules.map(module => (
+                {filteredModules.map(
+                  module => (
 
-                  <ModuleCard
-                    key={module.id}
-                    module={module}
+                    <ModuleCard
+                      key={module.id}
+                      module={module}
+                      onSelectModule={id =>
+                        setSelectedModuleId(
+                          id
+                        )
+                      }
+                      onSelectUf={uf =>
+                        handleSelectUf(
+                          module,
+                          uf
+                        )
+                      }
+                    />
 
-                    onSelectModule={id =>
-                      setSelectedModuleId(id)
-                    }
-
-                    onSelectUf={uf =>
-                      handleSelectUf(
-                        module,
-                        uf
-                      )
-                    }
-                  />
-
-                ))}
+                  )
+                )}
 
               </div>
 
-
-              {/* =================================================
-                  SIN RESULTADOS
-                  ================================================= */}
-
               {filteredModules.length === 0 && (
-
                 <div className="bg-white border border-slate-200 rounded-xl p-10 text-center">
 
                   <Search className="w-8 h-8 text-slate-300 mx-auto mb-3" />
 
                   <h3 className="font-bold text-slate-800">
-                    No se han encontrado resultados
+                    No s'han trobat resultats
                   </h3>
 
                   <p className="text-sm text-slate-500 mt-1">
-                    Prueba con otro término de búsqueda.
+                    Prova amb un altre terme de cerca.
                   </p>
 
                 </div>
-
               )}
 
             </div>
 
-
             {/* ==================================================
                 CTA PREMIUM
-                ================================================== */}
+            ================================================== */}
 
             {!isPremium && (
-
               <div className="bg-slate-900 rounded-2xl p-6 sm:p-8 text-white">
 
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -742,48 +773,39 @@ function AppContent() {
                     </div>
 
                     <h2 className="text-xl sm:text-2xl font-bold">
-
-                      Accede a toda la preparación
-
+                      Accedeix a tota la preparació
                     </h2>
 
                     <p className="text-sm text-slate-300 mt-2">
-
-                      Desbloquea el temario completo,
-                      todos los tests, simulacros,
-                      estadísticas y el resto de funcionalidades
-                      de la plataforma.
-
+                      Desbloqueja el contingut complet i la resta de funcionalitats disponibles en els plans Bàsic i Pro.
                     </p>
 
                   </div>
 
-
                   <button
                     onClick={() =>
-                      setIsRegistrationOpen(true)
+                      setIsRegistrationOpen(
+                        true
+                      )
                     }
                     className="shrink-0 px-6 py-3 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm transition-colors"
                   >
-                    Ver planes Premium
+                    Veure plans
                   </button>
 
                 </div>
 
               </div>
-
             )}
 
           </div>
-
         )}
 
       </main>
 
-
       {/* ======================================================
           FOOTER
-          ====================================================== */}
+      ====================================================== */}
 
       <footer className="bg-white border-t border-slate-200 text-slate-500 py-6 mt-12 text-center text-xs">
 
@@ -807,20 +829,16 @@ function AppContent() {
 
       </footer>
 
-
       {/* ======================================================
-          MODAL DE REGISTRO
-          ====================================================== */}
+          MODAL DE REGISTRE
+      ====================================================== */}
 
       <RegistrationModal
         isOpen={isRegistrationOpen}
-
         onClose={() =>
           setIsRegistrationOpen(false)
         }
-
         currentUser={currentUser}
-
         onSubmitRegistration={
           handleSubmitRegistration
         }
@@ -830,113 +848,97 @@ function AppContent() {
   );
 }
 
-
 // ============================================================
-// PANTALLA DE AUTENTICACIÓN
+// PANTALLA D'AUTENTICACIÓ
 // ============================================================
 
-function AuthScreenWrapper() {
+export function AuthScreenWrapper() {
 
   const [screen, setScreen] =
-    useState<'login' | 'register' | 'payment'>('login');
+    useState<
+      'login' | 'register' | 'payment'
+    >('login');
 
   const [registeredUser, setRegisteredUser] =
     useState<UserProfile | null>(null);
 
   const [selectedPlanId, setSelectedPlanId] =
-    useState<'basic' | 'pro' | null>(null);
+    useState<PlanId | null>(null);
 
+  // ============================================================
+  // SELECCIÓ DE PLA
+  // ============================================================
 
   const handleSelectPlan = (
-    planId: 'basic' | 'pro'
+    planId: PlanId
   ) => {
-
     setSelectedPlanId(planId);
-
-    console.log(
-      'Plan seleccionado:',
-      planId
-    );
   };
 
+  // ============================================================
+  // CONTINUAR AL PAGAMENT
+  // ============================================================
 
   const handleContinueToPayment = () => {
 
     if (!selectedPlanId) {
-
       alert(
-        'Por favor, selecciona un plan primero.'
+        'Si us plau, selecciona primer un pla.'
       );
-
       return;
     }
 
-
-    if (registeredUser) {
-
-      const updatedUser = {
-
-        ...registeredUser,
-
-        plan: selectedPlanId,
-
-        estatPagament:
-          'pendent' as const
-
-      };
-
-
-      setRegisteredUser(
-        updatedUser
-      );
-
-
-      const storedUsers =
-        JSON.parse(
-          localStorage.getItem(
-            'auth_users'
-          ) || '[]'
-        );
-
-
-      const updatedStoredUsers =
-        storedUsers.map(
-          (user: UserProfile) =>
-            user.id === updatedUser.id
-              ? updatedUser
-              : user
-        );
-
-
-      localStorage.setItem(
-        'auth_users',
-        JSON.stringify(
-          updatedStoredUsers
-        )
-      );
-
-
-      console.log(
-        'Usuario con plan guardado:',
-        updatedUser
-      );
-
-
+    if (!registeredUser) {
       alert(
-        `Has seleccionado el plan ${
-          selectedPlanId === 'basic'
-            ? 'Básico ($4.99)'
-            : 'Pro ($9.99)'
-        }. Ahora procederemos al pago.`
+        'Primer has de completar el registre.'
       );
-
+      return;
     }
 
+    const updatedUser: UserProfile = {
+      ...registeredUser,
+      plan: selectedPlanId,
+      estatPagament: 'pendent'
+    };
+
+    setRegisteredUser(updatedUser);
+
+    const storedUsers =
+      JSON.parse(
+        localStorage.getItem(
+          'auth_users'
+        ) || '[]'
+      );
+
+    const updatedStoredUsers =
+      storedUsers.map(
+        (user: UserProfile) =>
+          user.id === updatedUser.id
+            ? updatedUser
+            : user
+      );
+
+    localStorage.setItem(
+      'auth_users',
+      JSON.stringify(
+        updatedStoredUsers
+      )
+    );
+
+    alert(
+      `Has seleccionat el pla ${
+        selectedPlanId === 'basic'
+          ? 'Bàsic (4,99 €/mes)'
+          : 'Pro (9,99 €/mes)'
+      }.`
+    );
   };
 
+  // ============================================================
+  // RENDER AUTENTICACIÓ
+  // ============================================================
 
   return (
-
     <div className="min-h-screen bg-[#f8fafc]">
 
       {screen === 'login' ? (
@@ -954,24 +956,25 @@ function AuthScreenWrapper() {
           <div className="text-center mb-12">
 
             <h1 className="text-3xl md:text-4xl font-bold text-slate-900">
-              Elige tu plan de suscripción
+              Tria el teu pla de subscripció
             </h1>
 
             <p className="text-slate-600 mt-2 text-sm md:text-base">
-              Selecciona el plan que mejor se adapte a tus necesidades de estudio
+              Selecciona el pla que millor s'adapti a les teves necessitats d'estudi.
             </p>
 
           </div>
 
-
           <PricingCards
-            selectedPlanId={selectedPlanId}
-            onSelectPlan={handleSelectPlan}
+            selectedPlanId={
+              selectedPlanId
+            }
+            onSelectPlan={
+              handleSelectPlan
+            }
           />
 
-
           {selectedPlanId && (
-
             <div className="mt-8 text-center">
 
               <button
@@ -980,11 +983,10 @@ function AuthScreenWrapper() {
                 }
                 className="px-8 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg transition-colors"
               >
-                Continuar con el pago →
+                Continuar amb el pagament →
               </button>
 
             </div>
-
           )}
 
         </div>
@@ -992,70 +994,56 @@ function AuthScreenWrapper() {
       ) : (
 
         <RegisterScreen
-
           onSwitchToLogin={() =>
             setScreen('login')
           }
+          onSwitchToPayment={
+            user => {
+              setRegisteredUser(
+                user
+              );
 
-          onSwitchToPayment={user => {
+              setSelectedPlanId(
+                user.plan ?? null
+              );
 
-            setRegisteredUser(user);
-
-            setScreen('payment');
-
-          }}
-
+              setScreen(
+                'payment'
+              );
+            }
+          }
         />
 
       )}
 
     </div>
-
   );
 }
 
-
 // ============================================================
-// APP ROOT
+// COMPONENT ARREL
 // ============================================================
 
-function AppRoot() {
+function MainApp() {
 
   const {
     isAuthenticated
   } = useAuth();
 
-
-  if (!isAuthenticated) {
-
-    return (
-      <AuthScreenWrapper />
-    );
-
-  }
-
-
-  return (
-    <AppContent />
-  );
-
+  return isAuthenticated
+    ? <AppContent />
+    : <AuthScreenWrapper />;
 }
 
-
 // ============================================================
-// EXPORTACIÓN PRINCIPAL
+// APP
 // ============================================================
 
 export default function App() {
 
   return (
-
     <AuthProvider>
-
-      <AppRoot />
-
+      <MainApp />
     </AuthProvider>
-
   );
-
 }
