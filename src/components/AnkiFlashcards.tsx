@@ -1,6 +1,3 @@
-Exit code: 0
-Wall time: 1.2 seconds
-Output:
 import React, { useEffect, useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight, Clock, Eye, Pause, Play, Shuffle } from 'lucide-react';
 import { TopicContent } from '../types';
