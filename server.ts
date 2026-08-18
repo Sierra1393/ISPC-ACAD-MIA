@@ -1,3 +1,6 @@
+Exit code: 0
+Wall time: 1.1 seconds
+Output:
 import express from 'express';
 import path from 'path';
 import { GoogleGenAI, Type } from '@google/genai';
@@ -531,4 +534,11 @@ async function setupServer() {
   );
 }
 
-setupServer();
+// En Vercel l'aplicació s'importa des de api/index.ts. No ha d'obrir un port
+// propi, perquè Vercel ja s'encarrega de rebre les peticions.
+if (!process.env.VERCEL) {
+  setupServer();
+}
+
+export default app;
+

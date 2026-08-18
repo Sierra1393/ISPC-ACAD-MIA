@@ -1,8 +1,12 @@
+Exit code: 0
+Wall time: 1 seconds
+Output:
 import React, { useState } from 'react';
 import { FormativeUnit, Question, ExamAttempt, TopicContent } from '../types';
 import { QuizEngine } from './QuizEngine';
 import { SummaryPrinter } from './SummaryPrinter';
 import { AiTutorChat } from './AiTutorChat';
+import { AnkiFlashcards } from './AnkiFlashcards';
 import { BookOpen, Sparkles, FileText, Bot, ArrowLeft, ListOrdered, Shield, AlertCircle, CheckCircle2, Zap } from 'lucide-react';
 
 interface UfDetailViewProps {
@@ -18,7 +22,7 @@ export const UfDetailView: React.FC<UfDetailViewProps> = ({
   onBack,
   onSaveAttempt
 }) => {
-  const [activeTab, setActiveTab] = useState<'temari' | 'flash' | 'quiz' | 'tutor'>('temari');
+  const [activeTab, setActiveTab] = useState<'temari' | 'flash' | 'anki' | 'quiz' | 'tutor'>('temari');
   const [pendingQuery, setPendingQuery] = useState('');
   const [questions, setQuestions] = useState<Question[]>(uf.preguntesExamenPredefinides || []);
   const [isLoadingQuiz, setIsLoadingQuiz] = useState(false);
@@ -251,6 +255,17 @@ export const UfDetailView: React.FC<UfDetailViewProps> = ({
         </button>
 
         <button
+          onClick={() => setActiveTab('anki')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all ${
+            activeTab === 'anki'
+              ? 'bg-amber-700 text-white shadow-xs border-l-4 border-amber-900'
+              : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50 border border-slate-200'
+          }`}
+        >
+          🃏 ANKI
+        </button>
+
+        <button
           onClick={() => setActiveTab('quiz')}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all ${
             activeTab === 'quiz'
@@ -383,6 +398,8 @@ export const UfDetailView: React.FC<UfDetailViewProps> = ({
         />
       )}
 
+      {activeTab === 'anki' && <AnkiFlashcards topics={topicsList} />}
+
       {/* Pestaña Generar Test */}
       {activeTab === 'quiz' && (
         <QuizEngine
@@ -407,3 +424,4 @@ export const UfDetailView: React.FC<UfDetailViewProps> = ({
     </div>
   );
 };
+
